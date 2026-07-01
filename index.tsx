@@ -101,6 +101,7 @@ let eventId = '';
                     verificationPanelZoom: 100,
                     floatingNumberZoom: 100,
                     sponsorDisplayZoom: 100,
+                    sponsorNumberZoom: 100,
                     drawnTextColor: '#FFFFFF',
                     drawnTextStrokeColor: '#000000',
                     drawnTextStrokeWidth: 2,
@@ -874,10 +875,19 @@ function populateSettingsShortcutsTab() {
                                         </div>
                                     </div>
                                     <div class="flex-shrink-0 mt-4 flex flex-col items-center z-10">
-                                         <div class="my-2 max-w-xs mx-auto w-full flex items-center justify-center gap-2">
-                                           <button id="zoom-out-btn-sponsor" class="bg-gray-200 dark:bg-gray-700 w-10 h-10 rounded-full font-bold text-2xl">-</button>
-                                           <span id="sponsor-display-zoom-value" class="font-bold text-lg w-16 text-center">100%</span>
-                                           <button id="zoom-in-btn-sponsor" class="bg-gray-200 dark:bg-gray-700 w-10 h-10 rounded-full font-bold text-2xl">+</button>
+                                         <div class="my-2 max-w-xs mx-auto w-full flex flex-col items-center justify-center gap-2">
+                                           <div class="flex items-center gap-2">
+                                               <span class="text-sm font-bold text-slate-400 w-24 text-right">Geral:</span>
+                                               <button id="zoom-out-btn-sponsor" class="bg-gray-200 dark:bg-gray-700 w-10 h-10 rounded-full font-bold text-2xl">-</button>
+                                               <span id="sponsor-display-zoom-value" class="font-bold text-lg w-16 text-center">100%</span>
+                                               <button id="zoom-in-btn-sponsor" class="bg-gray-200 dark:bg-gray-700 w-10 h-10 rounded-full font-bold text-2xl">+</button>
+                                           </div>
+                                           <div class="flex items-center gap-2">
+                                               <span class="text-sm font-bold text-slate-400 w-24 text-right">Número:</span>
+                                               <button id="zoom-out-btn-sponsor-number" class="bg-gray-200 dark:bg-gray-700 w-10 h-10 rounded-full font-bold text-2xl">-</button>
+                                               <span id="sponsor-number-zoom-value" class="font-bold text-lg w-16 text-center">100%</span>
+                                               <button id="zoom-in-btn-sponsor-number" class="bg-gray-200 dark:bg-gray-700 w-10 h-10 rounded-full font-bold text-2xl">+</button>
+                                           </div>
                                        </div>
                                         <div class="flex items-center justify-center gap-4 mt-2">
                                            <button id="cancel-sponsor-display-btn" class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-3 px-6 rounded-full text-base">${appLabels.modalBackButton}</button>
@@ -2688,6 +2698,9 @@ function applyAuctionZoom(scale: number) {
             const displayWrapper = document.getElementById('sponsor-display-content-wrapper') as HTMLElement;
             const zoomOutBtn = document.getElementById('zoom-out-btn-sponsor')!;
             const zoomInBtn = document.getElementById('zoom-in-btn-sponsor')!;
+            const zoomOutNumBtn = document.getElementById('zoom-out-btn-sponsor-number')!;
+            const zoomInNumBtn = document.getElementById('zoom-in-btn-sponsor-number')!;
+            const numZoomValue = document.getElementById('sponsor-number-zoom-value')!;
             const confirmBtn = document.getElementById('confirm-sponsor-display-btn')!;
             const cancelBtn = document.getElementById('cancel-sponsor-display-btn')!;
 
@@ -2721,8 +2734,26 @@ function applyAuctionZoom(scale: number) {
             const initialZoom = appStore.state.appConfig.sponsorDisplayZoom || 100;
             applyZoom(initialZoom);
 
+            const applyNumZoom = (scale: number) => {
+                numberDisplay.style.transform = `scale(${scale / 100})`;
+                numberDisplay.style.transformOrigin = 'top left';
+                if (numZoomValue) numZoomValue.textContent = `${scale}%`;
+                appStore.state.appConfig.sponsorNumberZoom = scale;
+            };
+
+            const adjustNumZoom = (amount: number) => {
+                 const newZoom = Math.max(50, Math.min(300, (appStore.state.appConfig.sponsorNumberZoom || 100) + amount));
+                 applyNumZoom(newZoom);
+                 appStore.debouncedSave();
+            };
+
+            const initialNumZoom = appStore.state.appConfig.sponsorNumberZoom || 100;
+            applyNumZoom(initialNumZoom);
+
             zoomInBtn.addEventListener('click', () => adjustZoom(5));
             zoomOutBtn.addEventListener('click', () => adjustZoom(-5));
+            zoomInNumBtn.addEventListener('click', () => adjustNumZoom(5));
+            zoomOutNumBtn.addEventListener('click', () => adjustNumZoom(-5));
 
 
             DOMElements.sponsorDisplayModal.classList.remove('hidden');
