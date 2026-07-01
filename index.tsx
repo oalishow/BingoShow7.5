@@ -113,6 +113,7 @@ let eventId = '';
                     modalAutocloseSeconds: 5,
                     sponsorDisplaySeconds: 8,
                     sponsorTransitionEffect: 'fade',
+                    showMenuInBreak: true,
                     sponsorsByNumber: {} as Record<number, {name: string, image: string}>,
                     globalSponsor: { name: '', image: '' },
                     shortcuts: {
@@ -914,17 +915,25 @@ function populateSettingsShortcutsTab() {
                                 <header class="flex-shrink-0">
                                     <h2 id="event-break-title" class="text-6xl font-black text-sky-400">${appLabels.intervalModalTitle}</h2>
                                 </header>
-                                <main class="flex-grow my-8 grid grid-cols-1 md:grid-cols-2 gap-8 overflow-hidden">
-                                    <div id="break-left-column" class="flex flex-col items-center justify-center bg-black/20 p-6 rounded-xl">
-                                        <h3 id="break-left-title" class="text-5xl font-bold text-amber-400 mb-6">Cardápio</h3>
-                                        <div id="break-left-content" class="text-7xl font-black text-gray-900 dark:text-white text-center transition-opacity duration-500 opacity-0"></div>
+                                <main class="flex-grow my-8 grid grid-cols-1 md:grid-cols-2 gap-8 overflow-hidden relative z-10 min-h-0">
+                                    <div id="break-left-column" class="flex flex-col items-center bg-black/20 p-6 rounded-xl h-full overflow-hidden min-h-0">
+                                        <h3 id="break-left-title" class="text-5xl font-bold text-amber-400 mb-6 flex-shrink-0">Cardápio</h3>
+                                        <div id="break-left-content" class="flex-grow w-full h-full flex items-center justify-center text-7xl font-black text-gray-900 dark:text-white text-center transition-opacity duration-500 opacity-0 min-h-0"></div>
                                     </div>
-                                    <div id="break-right-column" class="flex flex-col items-center justify-center bg-black/20 p-6 rounded-xl">
-                                        <h3 id="break-right-title" class="text-5xl font-bold text-amber-400 mb-6">Apoio</h3>
-                                        <div id="break-right-content" class="text-7xl font-black text-gray-900 dark:text-white text-center transition-opacity duration-500 opacity-0"></div>
+                                    <div id="break-right-column" class="flex flex-col items-center bg-black/20 p-6 rounded-xl h-full overflow-hidden relative min-h-0">
+                                        <div class="flex items-center justify-between w-full mb-6 flex-shrink-0">
+                                            <div class="w-12"></div>
+                                            <h3 id="break-right-title" class="text-5xl font-bold text-amber-400">Apoio</h3>
+                                            <button id="toggle-sponsors-fullscreen-btn" class="w-12 h-12 bg-slate-700 hover:bg-slate-600 rounded-full flex items-center justify-center text-white cursor-pointer z-20 transition-colors" title="Tela Cheia">
+                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
+                                                   <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                                                 </svg>
+                                             </button>
+                                        </div>
+                                        <div id="break-right-content" class="flex-grow w-full h-full flex items-center justify-center transition-opacity duration-500 opacity-0 min-h-0"></div>
                                     </div>
                                 </main>
-                                <footer class="flex-shrink-0 flex justify-between items-center w-full">
+                                <footer class="flex-shrink-0 flex justify-between items-center w-full relative z-10">
                                     <div id="break-clock" class="text-4xl font-bold text-slate-700 dark:text-slate-300"></div>
                                     <button id="close-break-modal-btn" class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-3 px-8 rounded-full text-lg">${appLabels.modalBackButton}</button>
                                 </footer>
@@ -1119,6 +1128,11 @@ function populateSettingsShortcutsTab() {
                                    </div>
                                </div>
                                <button id="remove-global-sponsor-btn" class="mt-2 bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-3 rounded-lg text-sm" data-label-key="removeGlobalSponsorButton">${appLabels.removeGlobalSponsorButton}</button>
+                           </div>
+                           <h3 class="text-xl font-bold text-slate-700 dark:text-slate-300">Intervalo</h3>
+                           <div class="flex items-center gap-3 bg-gray-200 dark:bg-gray-700 p-3 rounded-lg mb-6">
+                                <input type="checkbox" id="show-menu-in-break-checkbox" class="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                <label for="show-menu-in-break-checkbox" class="text-slate-800 dark:text-slate-200 font-medium">Mostrar Cardápio no Intervalo</label>
                            </div>
                            <h3 class="text-xl font-bold text-slate-700 dark:text-slate-300">${appLabels.settingsSponsorsByNumberTitle}</h3>
                            <div class="flex items-center gap-3 bg-gray-200 dark:bg-gray-700 p-3 rounded-lg">
@@ -1653,6 +1667,16 @@ function populateSettingsSponsorsTab() {
         appStore.debouncedSave();
     });
 
+    // Menu in Break
+    const showMenuCheckbox = document.getElementById('show-menu-in-break-checkbox') as HTMLInputElement;
+    if (showMenuCheckbox) {
+        showMenuCheckbox.checked = appStore.state.appConfig.showMenuInBreak !== false;
+        showMenuCheckbox.addEventListener('change', (e) => {
+            appStore.state.appConfig.showMenuInBreak = (e.target as HTMLInputElement).checked;
+            appStore.debouncedSave();
+        });
+    }
+
     // Sponsors by Number
     const enableCheckbox = document.getElementById('enable-sponsors-by-number-checkbox') as HTMLInputElement;
     enableCheckbox.checked = appStore.state.appConfig.enableSponsorsByNumber;
@@ -1686,26 +1710,44 @@ function populateSettingsSponsorsTab() {
         nameInput.value = sponsor.name;
         nameInput.placeholder = 'Nome do patrocinador...';
         nameInput.className = 'w-full bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white p-2 rounded-md text-sm border border-slate-300 dark:border-gray-600 focus:ring-2 focus:ring-amber-500 outline-none';
-        nameInput.addEventListener('change', (e) => {
+        nameInput.addEventListener('input', (e) => {
             if (!appStore.state.appConfig.sponsorsByNumber[i]) appStore.state.appConfig.sponsorsByNumber[i] = { name: '', image: '' };
             appStore.state.appConfig.sponsorsByNumber[i].name = (e.target as HTMLInputElement).value;
             appStore.debouncedSave();
         });
 
+        const imageContainer = document.createElement('div');
+        imageContainer.className = 'flex items-center gap-2';
+
         const imageInput = document.createElement('input');
         imageInput.type = 'file';
         imageInput.accept = 'image/*';
         imageInput.className = 'text-xs text-slate-600 dark:text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100 w-full';
+        
+        const imagePreview = document.createElement('img');
+        imagePreview.className = 'w-8 h-8 object-contain rounded bg-white';
+        if (sponsor.image) {
+            imagePreview.src = sponsor.image;
+            imagePreview.style.display = 'block';
+        } else {
+            imagePreview.style.display = 'none';
+        }
+
         imageInput.addEventListener('change', async (e) => {
             const file = (e.target as HTMLInputElement).files?.[0];
             if (file) {
                 const base64 = await fileToBase64(file);
                 if (!appStore.state.appConfig.sponsorsByNumber[i]) appStore.state.appConfig.sponsorsByNumber[i] = { name: '', image: '' };
                 appStore.state.appConfig.sponsorsByNumber[i].image = base64;
+                imagePreview.src = base64;
+                imagePreview.style.display = 'block';
                 appStore.debouncedSave();
                 renderMasterBoard();
             }
         });
+
+        imageContainer.appendChild(imagePreview);
+        imageContainer.appendChild(imageInput);
 
         const removeImageBtn = document.createElement('button');
         removeImageBtn.innerHTML = '🗑️';
@@ -1716,6 +1758,8 @@ function populateSettingsSponsorsTab() {
                 appStore.state.appConfig.sponsorsByNumber[i].image = '';
                 deleteSponsorImage(i.toString());
                 imageInput.value = '';
+                imagePreview.src = '';
+                imagePreview.style.display = 'none';
                 appStore.debouncedSave();
                 renderMasterBoard();
             }
@@ -1723,7 +1767,7 @@ function populateSettingsSponsorsTab() {
 
         row.appendChild(numberLabel);
         row.appendChild(nameInput);
-        row.appendChild(imageInput);
+        row.appendChild(imageContainer);
         row.appendChild(removeImageBtn);
         container.appendChild(row);
     }
@@ -3667,30 +3711,61 @@ function applyAuctionZoom(scale: number) {
             const { gamesData, appConfig, menuItems } = appStore.state;
             DOMElements.eventBreakModal.innerHTML = getModalTemplates().eventBreak;
             DOMElements.eventBreakModal.classList.remove('hidden');
-            DOMElements.confettiCanvas.style.zIndex = '51'; 
+            DOMElements.confettiCanvas.style.zIndex = '51'; // Above modal content
             
+            const leftColumnEl = document.getElementById('break-left-column')!;
             const leftContentEl = document.getElementById('break-left-content')!;
+            const rightColumnEl = document.getElementById('break-right-column')!;
             const rightContentEl = document.getElementById('break-right-content')!;
             const rightTitleEl = document.getElementById('break-right-title')!;
             const clockEl = document.getElementById('break-clock')!;
+            
+            const mainGrid = DOMElements.eventBreakModal.querySelector('main');
+            
+            // Handle Menu Visibility
+            const hasMenu = appConfig.showMenuInBreak !== false && menuItems.length > 0;
+            let isFullscreen = false;
+            
+            const updateGridState = () => {
+                if ((!hasMenu || isFullscreen) && mainGrid) {
+                    leftColumnEl.style.display = 'none';
+                    mainGrid.classList.remove('md:grid-cols-2');
+                    mainGrid.classList.add('grid-cols-1');
+                } else if (mainGrid) {
+                    leftColumnEl.style.display = 'flex';
+                    mainGrid.classList.add('md:grid-cols-2');
+                }
+            };
+            
+            updateGridState();
+            
+            const toggleBtn = document.getElementById('toggle-sponsors-fullscreen-btn');
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', () => {
+                    isFullscreen = !isFullscreen;
+                    updateGridState();
+                });
+            }
 
             const allWinners = Object.values(gamesData).flatMap(g => g.winners || []);
-            const allSponsors = Object.values(appConfig.sponsorsByNumber).filter(s => s.image && s.name);
-            if (appConfig.globalSponsor.image && appConfig.globalSponsor.name) {
-                allSponsors.push(appConfig.globalSponsor);
+            const allSponsors = Object.values(appConfig.sponsorsByNumber).filter(s => (s.name && s.name.trim() !== "") || s.image);
+            if ((appConfig.globalSponsor.name && appConfig.globalSponsor.name.trim() !== "") || appConfig.globalSponsor.image) {
+                if (!allSponsors.find(s => s === appConfig.globalSponsor)) {
+                     allSponsors.push(appConfig.globalSponsor);
+                }
             }
             
-            const rightColumnContent = allSponsors.length > 0 ? allSponsors : allWinners;
-            rightTitleEl.textContent = allSponsors.length > 0 ? "Apoio" : "Vencedores";
+            const useSponsors = appConfig.enableSponsorsByNumber && allSponsors.length > 0;
+            const rightColumnContent = useSponsors ? allSponsors : allWinners;
+            rightTitleEl.textContent = useSponsors ? "Nossos Patrocinadores" : "Vencedores";
 
             let leftIndex = 0;
             let rightIndex = 0;
 
-            
             const applyTransition = (el: HTMLElement, state: 'out' | 'in') => {
-                const effect = appStore.state.appConfig.sponsorTransitionEffect === 'random' 
+                const effect = appConfig.sponsorTransitionEffect === 'random' 
                     ? ['fade', 'slide', 'zoom'][Math.floor(Math.random() * 3)] 
-                    : appStore.state.appConfig.sponsorTransitionEffect || 'fade';
+                    : appConfig.sponsorTransitionEffect || 'fade';
                 
                 el.style.transition = 'all 0.5s ease-in-out';
                 el.classList.remove('opacity-0', 'translate-x-full', 'scale-50');
@@ -3703,29 +3778,46 @@ function applyAuctionZoom(scale: number) {
             };
 
             const updateContent = () => {
-                applyTransition(leftContentEl, 'out');
-                setTimeout(() => {
-                    leftContentEl.innerHTML = menuItems[leftIndex % menuItems.length];
-                    applyTransition(leftContentEl, 'in');
-                    leftIndex++;
-                }, 500);
+                if (hasMenu) {
+                    applyTransition(leftContentEl, 'out');
+                    setTimeout(() => {
+                        leftContentEl.innerHTML = menuItems[leftIndex % menuItems.length] || '';
+                        applyTransition(leftContentEl, 'in');
+                        leftIndex++;
+                    }, 500);
+                }
 
                 if (rightColumnContent.length > 0) {
                     applyTransition(rightContentEl, 'out');
                     setTimeout(() => {
                         const item = rightColumnContent[rightIndex % rightColumnContent.length];
-                        if (item.image) { 
-                            rightContentEl.innerHTML = `<img src="${item.image}" class="max-h-64 object-contain mb-4 rounded-lg shadow-lg"><p>${item.name}</p>`;
-                        } else { 
-                            rightContentEl.innerHTML = `<p>${item.name}</p><p class="text-amber-400 text-5xl mt-2">${item.prize}</p>`;
+                        
+                        let innerHTML = '';
+                        if (useSponsors) {
+                            if (item.image) {
+                                innerHTML += `<div class="w-full flex-1 min-h-0 flex items-center justify-center mb-6"><img src="${item.image}" class="max-w-full max-h-full object-contain drop-shadow-2xl"></div>`;
+                            }
+                            if (item.name) {
+                                innerHTML += `<p class="text-5xl md:text-7xl text-center font-black text-amber-400 flex-shrink-0">${item.name}</p>`;
+                            }
+                        } else {
+                            if (item.name) {
+                                innerHTML += `<p class="text-5xl md:text-7xl text-center font-bold text-slate-100 mb-6">${item.name}</p>`;
+                            }
+                            if (item.prize) {
+                                innerHTML += `<p class="text-6xl md:text-8xl text-center font-black text-amber-400">${item.prize}</p>`;
+                            }
                         }
+                        
+                        rightContentEl.innerHTML = `<div class="flex flex-col items-center justify-center bg-black/40 rounded-xl p-8 w-full h-full border border-sky-900/40 shadow-xl overflow-hidden min-h-0">${innerHTML}</div>`;
                         applyTransition(rightContentEl, 'in');
                         rightIndex++;
                     }, 500);
-                } else { 
-                    rightContentEl.innerHTML = `<p class="text-3xl text-slate-400">Ainda não há vencedores ou patrocinadores cadastrados.</p>`;
+                } else {
+                     rightContentEl.innerHTML = `<div class="flex flex-col items-center justify-center h-full w-full bg-black/40 rounded-xl border border-sky-900/40"><p class="text-4xl text-slate-400 font-bold">Nenhum dado cadastrado.</p></div>`;
                 }
             };
+            
             const updateClock = () => {
                 clockEl.textContent = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
             };
@@ -3733,16 +3825,18 @@ function applyAuctionZoom(scale: number) {
             updateContent();
             updateClock();
             
+            // Start confetti
+            triggerConfetti();
+            
             if (intervalContentInterval) clearInterval(intervalContentInterval);
             if (intervalClockInterval) clearInterval(intervalClockInterval);
             if (breakConfettiInterval) clearInterval(breakConfettiInterval);
             
-            const cycleTime = (appStore.state.appConfig.sponsorDisplaySeconds || 8) * 1000;
+            const cycleTime = (appConfig.sponsorDisplaySeconds || 8) * 1000;
             intervalContentInterval = setInterval(updateContent, cycleTime);
             intervalClockInterval = setInterval(updateClock, 1000);
+            breakConfettiInterval = setInterval(triggerConfetti, 3500);
             
-            // Confete de intervalo removido conforme pedido: "deixe somente para sorteio de cartelas"
-
             document.getElementById('close-break-modal-btn')!.onclick = () => {
                 DOMElements.eventBreakModal.classList.add('hidden');
                 clearInterval(intervalContentInterval);

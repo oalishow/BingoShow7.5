@@ -1,7 +1,7 @@
 const fs = require('fs');
 let code = fs.readFileSync('index.tsx', 'utf8');
 
-const regex = /const imageInput = document\.createElement\('input'\);[\s\S]*?row\.appendChild\(removeImageBtn\);/g;
+const regex = /let innerHTML = '';[\s\S]*?rightIndex\+\+;/g;
 
 const match = code.match(regex);
 if (match) {
