@@ -864,7 +864,7 @@ function populateSettingsShortcutsTab() {
                                        </div>
                                     </div>
                                 </div>`,
-                sponsorDisplay: `<div class="modal-content text-center flex flex-col items-center justify-center p-4">
+                sponsorDisplay: `<div class="modal-content text-center flex flex-col items-center justify-center p-4 m-auto w-full">
                                     <div id="sponsor-display-content-wrapper" class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl transition-transform duration-300 w-full max-w-7xl relative">
                                         <div id="sponsor-display-content" class="flex flex-col items-center justify-center h-full">
                                             <div id="sponsor-info-display" class="flex flex-col items-center justify-center animate-fade-in-up p-4 w-full h-[60vh] max-h-[600px]">
@@ -2090,42 +2090,12 @@ function applyAuctionZoom(scale: number) {
     }
 }
 
-        const fileToBase64 = (file: File, maxWidth = 800, maxHeight = 800, quality = 0.8): Promise<string> =>
+        const fileToBase64 = (file: File): Promise<string> =>
             new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
                 reader.onload = (event) => {
-                    const img = new Image();
-                    img.src = event.target?.result as string;
-                    img.onload = () => {
-                        let width = img.width;
-                        let height = img.height;
-
-                        if (width > maxWidth || height > maxHeight) {
-                            const ratio = Math.min(maxWidth / width, maxHeight / height);
-                            width *= ratio;
-                            height *= ratio;
-                        }
-
-                        const canvas = document.createElement('canvas');
-                        canvas.width = width;
-                        canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        if (!ctx) {
-                            resolve(reader.result as string); // fallback
-                            return;
-                        }
-                        ctx.drawImage(img, 0, 0, width, height);
-                        
-                        // Preserve transparency using WebP (or PNG for older browsers, though WebP is widely supported now)
-                        if (file.type === 'image/png') {
-                             // Use PNG for pristine logos if they specifically uploaded a PNG and size is small enough, but webp is safer for compression.
-                             // Actually, let's just use WebP for everything as it supports transparency and compression.
-                        }
-                        const dataUrl = canvas.toDataURL('image/webp', quality);
-                        resolve(dataUrl);
-                    };
-                    img.onerror = (error) => reject(error);
+                    resolve(event.target?.result as string);
                 };
                 reader.onerror = error => reject(error);
             });
@@ -2720,7 +2690,7 @@ function applyAuctionZoom(scale: number) {
             nameEl.textContent = sponsor.name || '';
             
             const applyZoom = (scale: number) => {
-                displayWrapper.style.transform = `scale(${scale / 100})`;
+                displayWrapper.style.zoom = `${scale}%`;
                 if (zoomValue) zoomValue.textContent = `${scale}%`;
                 appStore.state.appConfig.sponsorDisplayZoom = scale;
             };
@@ -2735,8 +2705,7 @@ function applyAuctionZoom(scale: number) {
             applyZoom(initialZoom);
 
             const applyNumZoom = (scale: number) => {
-                numberDisplay.style.transform = `scale(${scale / 100})`;
-                numberDisplay.style.transformOrigin = 'top left';
+                numberDisplay.style.zoom = `${scale}%`;
                 if (numZoomValue) numZoomValue.textContent = `${scale}%`;
                 appStore.state.appConfig.sponsorNumberZoom = scale;
             };
