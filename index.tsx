@@ -110,6 +110,8 @@ let eventId = '';
                     enableSponsorsByNumber: false,
                     enableModalAutoclose: true,
                     modalAutocloseSeconds: 5,
+                    sponsorDisplaySeconds: 8,
+                    sponsorTransitionEffect: 'fade',
                     sponsorsByNumber: {} as Record<number, {name: string, image: string}>,
                     globalSponsor: { name: '', image: '' },
                     shortcuts: {
@@ -514,7 +516,8 @@ let eventId = '';
         let intervalContentInterval: any;
         let intervalClockInterval: any;
         let breakConfettiInterval: any;
-        let finalConfettiInterval: any;
+        let finalConfettiInterval: any; let finalSponsorsInterval: any;
+        
         let clockInterval: any;
         let confettiAnimationId: number;
         let spinTimeout: any;
@@ -523,7 +526,7 @@ let eventId = '';
 
         // --- Constants ---
         const currentVersion = "7.5"; // Foco 100% Local
-        const buildInfo = "Build: 30/04/2026 - 12:24"; // Data e hora em formato DD/MM/AAAA 
+        const buildInfo = "Build: 01/07/2026 - 12:24"; // Data e hora em formato DD/MM/AAAA 
         const DYNAMIC_LETTERS = ['B', 'I', 'N', 'G', 'O'];
         const DYNAMIC_LETTERS_AJUDE = ['A', 'J', 'U', 'D', 'E'];
         const BINGO_CONFIG: { [key: string]: { min: number; max: number } } = { B: { min: 1, max: 15 }, I: { min: 16, max: 30 }, N: { min: 31, max: 45 }, G: { min: 46, max: 60 }, O: { min: 61, max: 75 },
@@ -957,9 +960,7 @@ function populateSettingsShortcutsTab() {
                                 <!-- Seção de Patrocinadores -->
                                 <div id="final-sponsors-section" class="flex-shrink-0 my-4">
                                     <h3 class="text-2xl font-bold text-slate-700 dark:text-slate-300 mb-3">Agradecimento aos Patrocinadores</h3>
-                                    <div id="final-sponsors-list" class="bg-gray-100 dark:bg-gray-900 p-3 rounded-lg max-h-40 overflow-y-auto flex flex-wrap justify-center gap-4">
-                                        <!-- Lista de patrocinadores aqui -->
-                                    </div>
+                                    <div id="final-sponsors-list" class="bg-gray-100 dark:bg-gray-900 p-3 rounded-lg h-48 flex flex-col items-center justify-center transition-all duration-500 overflow-hidden"></div>
                                 </div>
                                 <div class="mt-4 flex flex-col items-center gap-2 flex-shrink-0">
                                     <div class="flex justify-center gap-4 w-full max-w-md">
@@ -1071,6 +1072,24 @@ function populateSettingsShortcutsTab() {
                         </div>
 
                         <div id="tab-content-sponsors" class="hidden space-y-4 text-left">
+                           <div class="border-b border-gray-700 pb-6 mb-6">
+                               <h3 class="text-xl font-bold text-slate-700 dark:text-slate-300 mb-2">Exibição no Telão (Intervalo/Fim)</h3>
+                               <div class="space-y-4">
+                                   <div>
+                                       <label for="sponsor-display-timer" class="block text-sm font-bold text-slate-600 dark:text-slate-400 mb-1">Tempo de exibição por patrocinador (<span id="sponsor-display-value">8</span>s)</label>
+                                       <input type="range" id="sponsor-display-timer" min="3" max="30" value="8" class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer range-lg">
+                                   </div>
+                                   <div>
+                                       <label for="sponsor-transition-effect" class="block text-sm font-bold text-slate-600 dark:text-slate-400 mb-1">Efeito de transição</label>
+                                       <select id="sponsor-transition-effect" class="block w-full text-sm p-2 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white rounded-lg border border-slate-300 dark:border-gray-600 focus:ring-2 focus:ring-amber-500 outline-none">
+                                           <option value="fade">Fade In / Fade Out</option>
+                                           <option value="slide">Deslizar</option>
+                                           <option value="zoom">Zoom</option>
+                                           <option value="random">Aleatório</option>
+                                       </select>
+                                   </div>
+                               </div>
+                           </div>
                             <div class="border-b border-gray-700 pb-6 mb-6">
                                <h3 class="text-xl font-bold text-slate-700 dark:text-slate-300 mb-2" data-label-key="settingsGlobalSponsorTitle">${appLabels.settingsGlobalSponsorTitle}</h3>
                                <p class="text-sm text-slate-600 dark:text-slate-400 mb-4" data-label-key="settingsGlobalSponsorDescription">${appLabels.settingsGlobalSponsorDescription}</p>
@@ -1468,6 +1487,7 @@ function showDrawnPrizesModal() {
 
 function showFinalWinnersModal() {
     if (finalConfettiInterval) clearInterval(finalConfettiInterval);
+        if (typeof finalSponsorsInterval !== "undefined" && finalSponsorsInterval) clearInterval(finalSponsorsInterval);
     DOMElements.finalWinnersModal.innerHTML = getModalTemplates().finalWinners;
     DOMElements.finalWinnersModal.classList.remove('hidden');
 
@@ -1485,16 +1505,48 @@ function showFinalWinnersModal() {
     
     const uniqueSponsors = Array.from(new Map(allSponsors.map(s => [s.name, s])).values());
 
+    
+    
+    
     if (uniqueSponsors.length > 0) {
-        sponsorsList.innerHTML = uniqueSponsors.map(s => `
-            <div class="flex flex-col items-center">
-                <img src="${s.image}" alt="${s.name}" class="w-20 h-20 object-contain rounded-md bg-white p-1">
-                <span class="text-xs text-slate-700 dark:text-slate-300 mt-1">${s.name}</span>
-            </div>
-        `).join('');
+        document.getElementById('final-sponsors-section')!.classList.remove('hidden');
+        let sponsorIndex = 0;
+        
+        const applyTransition = (el: HTMLElement, state: 'out' | 'in') => {
+            const effect = appStore.state.appConfig.sponsorTransitionEffect === 'random' 
+                ? ['fade', 'slide', 'zoom'][Math.floor(Math.random() * 3)] 
+                : appStore.state.appConfig.sponsorTransitionEffect || 'fade';
+            
+            el.style.transition = 'all 0.5s ease-in-out';
+            el.classList.remove('opacity-0', 'translate-x-full', 'scale-50');
+            
+            if (state === 'out') {
+                if (effect === 'fade') el.classList.add('opacity-0');
+                else if (effect === 'slide') el.classList.add('opacity-0', 'translate-x-full');
+                else if (effect === 'zoom') el.classList.add('opacity-0', 'scale-50');
+            }
+        };
+
+        const cycleFinalSponsors = () => {
+            applyTransition(sponsorsList, 'out');
+            setTimeout(() => {
+                const s = uniqueSponsors[sponsorIndex % uniqueSponsors.length];
+                sponsorsList.innerHTML = `
+                    <img src="${s.image}" alt="${s.name}" class="w-24 h-24 object-contain rounded-md bg-white p-1 mb-2">
+                    <span class="text-lg font-bold text-slate-700 dark:text-slate-300">${s.name}</span>
+                `;
+                applyTransition(sponsorsList, 'in');
+                sponsorIndex++;
+            }, 500);
+        };
+        
+        cycleFinalSponsors();
+        const cycleTime = (appStore.state.appConfig.sponsorDisplaySeconds || 8) * 1000;
+        finalSponsorsInterval = setInterval(cycleFinalSponsors, cycleTime);
     } else {
         document.getElementById('final-sponsors-section')!.classList.add('hidden');
     }
+
 
 
     let winnerIndex = 0;
@@ -1759,6 +1811,31 @@ function showSettingsModal() {
         strokeWidthValue.textContent = width.toString();
     });
     strokeWidthSlider.addEventListener('change', () => appStore.debouncedSave());
+
+    
+    const sponsorDisplayTimer = document.getElementById('sponsor-display-timer') as HTMLInputElement;
+    const sponsorDisplayValue = document.getElementById('sponsor-display-value') as HTMLElement;
+    const sponsorTransitionEffect = document.getElementById('sponsor-transition-effect') as HTMLSelectElement;
+
+    if (sponsorDisplayTimer && appConfig.sponsorDisplaySeconds !== undefined) {
+        sponsorDisplayTimer.value = appConfig.sponsorDisplaySeconds.toString();
+        sponsorDisplayValue.textContent = appConfig.sponsorDisplaySeconds.toString();
+    }
+    if (sponsorTransitionEffect && appConfig.sponsorTransitionEffect !== undefined) {
+        sponsorTransitionEffect.value = appConfig.sponsorTransitionEffect;
+    }
+
+    sponsorDisplayTimer?.addEventListener('input', (e) => {
+        const seconds = parseInt((e.target as HTMLInputElement).value);
+        appStore.state.appConfig.sponsorDisplaySeconds = seconds;
+        if (sponsorDisplayValue) sponsorDisplayValue.textContent = seconds.toString();
+    });
+    sponsorDisplayTimer?.addEventListener('change', () => appStore.debouncedSave());
+    
+    sponsorTransitionEffect?.addEventListener('change', (e) => {
+        appStore.state.appConfig.sponsorTransitionEffect = (e.target as HTMLSelectElement).value;
+        appStore.debouncedSave();
+    });
 
     const autocloseCheckbox = document.getElementById('enable-modal-autoclose') as HTMLInputElement;
     const autocloseTimer = document.getElementById('modal-autoclose-timer') as HTMLInputElement;
@@ -3605,16 +3682,32 @@ function applyAuctionZoom(scale: number) {
             let leftIndex = 0;
             let rightIndex = 0;
 
+            
+            const applyTransition = (el: HTMLElement, state: 'out' | 'in') => {
+                const effect = appStore.state.appConfig.sponsorTransitionEffect === 'random' 
+                    ? ['fade', 'slide', 'zoom'][Math.floor(Math.random() * 3)] 
+                    : appStore.state.appConfig.sponsorTransitionEffect || 'fade';
+                
+                el.style.transition = 'all 0.5s ease-in-out';
+                el.classList.remove('opacity-0', 'translate-x-full', 'scale-50');
+                
+                if (state === 'out') {
+                    if (effect === 'fade') el.classList.add('opacity-0');
+                    else if (effect === 'slide') el.classList.add('opacity-0', 'translate-x-full');
+                    else if (effect === 'zoom') el.classList.add('opacity-0', 'scale-50');
+                }
+            };
+
             const updateContent = () => {
-                leftContentEl.classList.add('opacity-0');
+                applyTransition(leftContentEl, 'out');
                 setTimeout(() => {
                     leftContentEl.innerHTML = menuItems[leftIndex % menuItems.length];
-                    leftContentEl.classList.remove('opacity-0');
+                    applyTransition(leftContentEl, 'in');
                     leftIndex++;
                 }, 500);
 
                 if (rightColumnContent.length > 0) {
-                    rightContentEl.classList.add('opacity-0');
+                    applyTransition(rightContentEl, 'out');
                     setTimeout(() => {
                         const item = rightColumnContent[rightIndex % rightColumnContent.length];
                         if (item.image) { 
@@ -3622,14 +3715,13 @@ function applyAuctionZoom(scale: number) {
                         } else { 
                             rightContentEl.innerHTML = `<p>${item.name}</p><p class="text-amber-400 text-5xl mt-2">${item.prize}</p>`;
                         }
-                        rightContentEl.classList.remove('opacity-0');
+                        applyTransition(rightContentEl, 'in');
                         rightIndex++;
                     }, 500);
-                } else {
-                     rightContentEl.innerHTML = `<p class="text-3xl text-slate-400">Ainda não há vencedores ou patrocinadores cadastrados.</p>`;
+                } else { 
+                    rightContentEl.innerHTML = `<p class="text-3xl text-slate-400">Ainda não há vencedores ou patrocinadores cadastrados.</p>`;
                 }
             };
-
             const updateClock = () => {
                 clockEl.textContent = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
             };
@@ -3641,7 +3733,8 @@ function applyAuctionZoom(scale: number) {
             if (intervalClockInterval) clearInterval(intervalClockInterval);
             if (breakConfettiInterval) clearInterval(breakConfettiInterval);
             
-            intervalContentInterval = setInterval(updateContent, 6000);
+            const cycleTime = (appStore.state.appConfig.sponsorDisplaySeconds || 8) * 1000;
+            intervalContentInterval = setInterval(updateContent, cycleTime);
             intervalClockInterval = setInterval(updateClock, 1000);
             
             // Confete de intervalo removido conforme pedido: "deixe somente para sorteio de cartelas"
@@ -4216,7 +4309,7 @@ function showRoundEditModal(gameNumber: string) {
                                                     const num = cardData.numbers[colIndex][rowIndex];
                                                     let cellContent = '';
                                                     if (num === 0) cellContent = useLogo ? `<img src="${logoData}" class="w-full h-full object-contain p-0.5" />` : '★';
-                                                    else cellContent = num;
+                                                    else cellContent = num.toString();
                                                     return `<div class="flex items-center justify-center font-black text-[16px] leading-[1.1] ${colIndex === 4 ? '' : 'border-r-[2px] border-black'} ${num === 0 && !useLogo ? 'bg-gray-200' : ''}">${cellContent}</div>`;
                                                 }).join('')}
                                             </div>
