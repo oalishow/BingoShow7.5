@@ -864,13 +864,13 @@ function populateSettingsShortcutsTab() {
                                     </div>
                                 </div>`,
                 sponsorDisplay: `<div class="modal-content text-center flex flex-col items-center justify-center p-4">
-                                    <div id="sponsor-display-content-wrapper" class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl transition-transform duration-300 w-full max-w-7xl">
-                                        <div id="sponsor-display-content" class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center justify-items-center">
-                                            <div id="sponsor-number-display" class="font-black text-gray-900 dark:text-white flex justify-center items-center gap-x-4 rounded-full shadow-inner animate-bounce-in w-[500px] h-[500px] text-[300px]"></div>
-                                            <div id="sponsor-info-display" class="flex flex-col items-center justify-center animate-fade-in-up p-4">
-                                                <img id="sponsor-image" src="" class="max-w-full max-h-[450px] object-contain rounded-lg shadow-lg mb-6">
+                                    <div id="sponsor-display-content-wrapper" class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl transition-transform duration-300 w-full max-w-7xl relative">
+                                        <div id="sponsor-display-content" class="flex flex-col items-center justify-center h-full">
+                                            <div id="sponsor-info-display" class="flex flex-col items-center justify-center animate-fade-in-up p-4 w-full h-[60vh] max-h-[600px]">
+                                                <img id="sponsor-image" src="" class="max-w-full max-h-full object-contain rounded-lg shadow-lg mb-6">
                                                 <p id="sponsor-name" class="font-bold text-amber-400 text-[52px]"></p>
                                             </div>
+                                            <div id="sponsor-number-display" class="absolute top-4 left-4 font-black text-gray-900 dark:text-white flex justify-center items-center gap-x-2 rounded-full shadow-lg animate-bounce-in w-[150px] h-[150px] text-[80px]"></div>
                                         </div>
                                     </div>
                                     <div class="flex-shrink-0 mt-4 flex flex-col items-center z-10">
@@ -2704,7 +2704,7 @@ function applyAuctionZoom(scale: number) {
             numberDisplay.style.cssText += `line-height: 1; text-shadow: 2px 2px 5px #000; color: ${mainColor}; -webkit-text-stroke: ${strokeStyle}; ${bgColorStyle}`;
 
             imageEl.src = sponsor.image;
-            nameEl.textContent = sponsor.name || 'Patrocinador';
+            nameEl.textContent = sponsor.name || '';
             
             const applyZoom = (scale: number) => {
                 displayWrapper.style.transform = `scale(${scale / 100})`;
