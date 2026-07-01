@@ -871,19 +871,21 @@ function populateSettingsShortcutsTab() {
                                                 <img id="sponsor-image" src="" class="max-w-full max-h-full object-contain rounded-lg shadow-lg mb-6">
                                                 <p id="sponsor-name" class="font-bold text-amber-400 text-[52px]"></p>
                                             </div>
-                                            <div id="sponsor-number-display" class="absolute top-4 left-4 font-black text-gray-900 dark:text-white flex justify-center items-center gap-x-2 rounded-full shadow-lg animate-bounce-in w-[150px] h-[150px] text-[80px]"></div>
+                                            <div id="sponsor-number-zoom-wrapper" class="absolute top-4 left-4 origin-top-left">
+                                                <div id="sponsor-number-display" class="font-black text-gray-900 dark:text-white flex justify-center items-center gap-x-2 rounded-full shadow-lg animate-bounce-in w-[150px] h-[150px] text-[80px]"></div>
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="flex-shrink-0 mt-4 flex flex-col items-center z-10">
-                                         <div class="my-2 max-w-xs mx-auto w-full flex flex-col items-center justify-center gap-2">
+                                         <div class="my-2 mx-auto w-full flex flex-row items-center justify-center gap-6">
                                            <div class="flex items-center gap-2">
-                                               <span class="text-sm font-bold text-slate-400 w-24 text-right">Geral:</span>
+                                               <span class="text-sm font-bold text-slate-400 text-right">Geral:</span>
                                                <button id="zoom-out-btn-sponsor" class="bg-gray-200 dark:bg-gray-700 w-10 h-10 rounded-full font-bold text-2xl">-</button>
                                                <span id="sponsor-display-zoom-value" class="font-bold text-lg w-16 text-center">100%</span>
                                                <button id="zoom-in-btn-sponsor" class="bg-gray-200 dark:bg-gray-700 w-10 h-10 rounded-full font-bold text-2xl">+</button>
                                            </div>
                                            <div class="flex items-center gap-2">
-                                               <span class="text-sm font-bold text-slate-400 w-24 text-right">Número:</span>
+                                               <span class="text-sm font-bold text-slate-400 text-right">Número:</span>
                                                <button id="zoom-out-btn-sponsor-number" class="bg-gray-200 dark:bg-gray-700 w-10 h-10 rounded-full font-bold text-2xl">-</button>
                                                <span id="sponsor-number-zoom-value" class="font-bold text-lg w-16 text-center">100%</span>
                                                <button id="zoom-in-btn-sponsor-number" class="bg-gray-200 dark:bg-gray-700 w-10 h-10 rounded-full font-bold text-2xl">+</button>
@@ -1683,7 +1685,7 @@ function populateSettingsSponsorsTab() {
         nameInput.type = 'text';
         nameInput.value = sponsor.name;
         nameInput.placeholder = 'Nome do patrocinador...';
-        nameInput.className = 'w-full bg-gray-100 dark:bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white p-1 rounded-md text-sm';
+        nameInput.className = 'w-full bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white p-2 rounded-md text-sm border border-slate-300 dark:border-gray-600 focus:ring-2 focus:ring-amber-500 outline-none';
         nameInput.addEventListener('change', (e) => {
             if (!appStore.state.appConfig.sponsorsByNumber[i]) appStore.state.appConfig.sponsorsByNumber[i] = { name: '', image: '' };
             appStore.state.appConfig.sponsorsByNumber[i].name = (e.target as HTMLInputElement).value;
@@ -2690,7 +2692,8 @@ function applyAuctionZoom(scale: number) {
             nameEl.textContent = sponsor.name || '';
             
             const applyZoom = (scale: number) => {
-                displayWrapper.style.zoom = `${scale}%`;
+                displayWrapper.style.transform = `scale(${scale / 100})`;
+                displayWrapper.style.transformOrigin = 'center';
                 if (zoomValue) zoomValue.textContent = `${scale}%`;
                 appStore.state.appConfig.sponsorDisplayZoom = scale;
             };
@@ -2705,7 +2708,8 @@ function applyAuctionZoom(scale: number) {
             applyZoom(initialZoom);
 
             const applyNumZoom = (scale: number) => {
-                numberDisplay.style.zoom = `${scale}%`;
+                const wrapper = document.getElementById('sponsor-number-zoom-wrapper');
+                if (wrapper) wrapper.style.transform = `scale(${scale / 100})`;
                 if (numZoomValue) numZoomValue.textContent = `${scale}%`;
                 appStore.state.appConfig.sponsorNumberZoom = scale;
             };
