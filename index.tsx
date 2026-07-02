@@ -981,7 +981,7 @@ function populateSettingsShortcutsTab() {
                                 <!-- Seção de Patrocinadores -->
                                 <div id="final-sponsors-section" class="flex-shrink-0 my-4">
                                     <h3 class="text-2xl font-bold text-slate-700 dark:text-slate-300 mb-3">Agradecimento aos Patrocinadores</h3>
-                                    <div id="final-sponsors-list" class="bg-gray-100 dark:bg-gray-900 p-3 rounded-lg h-48 flex flex-col items-center justify-center transition-all duration-500 overflow-hidden"></div>
+                                    <div id="final-sponsors-list" class="bg-gray-100 dark:bg-gray-900/50 p-6 rounded-xl h-72 md:h-80 w-full flex flex-col items-center justify-center transition-all duration-500 overflow-hidden shadow-inner border border-gray-700/50"></div>
                                 </div>
                                 <div class="mt-4 flex flex-col items-center gap-2 flex-shrink-0">
                                     <div class="flex justify-center gap-4 w-full max-w-md">
@@ -1526,15 +1526,13 @@ function showFinalWinnersModal() {
     
     // Populate sponsors
     const allSponsors = Object.values(appStore.state.appConfig.sponsorsByNumber)
-        .filter(s => s.image && s.name)
-        .concat(appStore.state.appConfig.globalSponsor.image ? [appStore.state.appConfig.globalSponsor] : []);
+        .filter(s => (s.name && s.name.trim() !== "") || s.image)
+        .concat((appStore.state.appConfig.globalSponsor.name || appStore.state.appConfig.globalSponsor.image) ? [appStore.state.appConfig.globalSponsor] : []);
     
-    const uniqueSponsors = Array.from(new Map(allSponsors.map(s => [s.name, s])).values());
-
+    // We display all sponsors, including duplicates if they are entered multiple times
+    const sponsorsToDisplay = allSponsors;
     
-    
-    
-    if (uniqueSponsors.length > 0) {
+    if (sponsorsToDisplay.length > 0) {
         document.getElementById('final-sponsors-section')!.classList.remove('hidden');
         let sponsorIndex = 0;
         
@@ -1556,11 +1554,15 @@ function showFinalWinnersModal() {
         const cycleFinalSponsors = () => {
             applyTransition(sponsorsList, 'out');
             setTimeout(() => {
-                const s = uniqueSponsors[sponsorIndex % uniqueSponsors.length];
-                sponsorsList.innerHTML = `
-                    <img src="${s.image}" alt="${s.name}" class="w-24 h-24 object-contain rounded-md bg-white p-1 mb-2">
-                    <span class="text-lg font-bold text-slate-700 dark:text-slate-300">${s.name}</span>
-                `;
+                const s = sponsorsToDisplay[sponsorIndex % sponsorsToDisplay.length];
+                let content = '';
+                if (s.image) {
+                    content += `<div class="w-full flex-1 min-h-0 flex items-center justify-center mb-4"><img src="${s.image}" alt="${s.name || 'Patrocinador'}" class="max-w-full max-h-full object-contain drop-shadow-2xl"></div>`;
+                }
+                if (s.name) {
+                    content += `<span class="text-4xl md:text-5xl font-bold text-amber-400 flex-shrink-0">${s.name}</span>`;
+                }
+                sponsorsList.innerHTML = `<div class="flex flex-col items-center justify-center w-full h-full min-h-0">${content}</div>`;
                 applyTransition(sponsorsList, 'in');
                 sponsorIndex++;
             }, 500);
@@ -5604,8 +5606,16 @@ function showRoundEditModal(gameNumber: string) {
                     </div>
                 `;
                 document.body.appendChild(updateContainer);
-                document.getElementById('pwa-auto-update-btn')!.addEventListener('click', () => {
-                    updateSW(true);
+                document.getElementById('pwa-auto-update-btn')!.addEventListener('click', async () => {
+                    updateContainer.remove();
+                    if (updateSW) {
+                        try {
+                            await updateSW(true);
+                        } catch (e) {
+                            console.error('Failed to update SW:', e);
+                        }
+                    }
+                    window.location.reload();
                 });
             },
             onOfflineReady() {
