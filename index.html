@@ -386,7 +386,7 @@
                     <!-- O logo customizado será inserido aqui, ou o SVG padrão será mostrado -->
                 </div>
                 
-                <div id="main-title" class="text-4xl sm:text-5xl md:text-7xl font-black tracking-tight leading-none drop-shadow-lg transform hover:scale-105 transition-transform duration-300 uppercase focus:outline-none focus:ring-2 ring-amber-500 rounded-lg px-4 py-2 mt-4 text-center">
+                <div id="main-title" class="text-4xl sm:text-5xl md:text-7xl font-black tracking-tight leading-none drop-shadow-lg transform hover:scale-105 transition-transform duration-300 uppercase focus:outline-none focus:ring-2 ring-amber-500 rounded-lg px-4 py-2 min-h-[44px] mt-4 text-center">
                     <!-- Será preenchido pelo JS -->
                 </div>
                 
@@ -404,7 +404,7 @@
         <main class="grid grid-cols-1 lg:grid-cols-5 gap-6 p-4 sm:p-6">
             
             <!-- BARRA LATERAL ESQUERDA: VÍDEO, CONTROLES GERAIS E VENCEDORES -->
-            <aside class="lg:col-span-1 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 flex flex-col">
+            <aside class="lg:col-span-1 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 flex flex-col order-3 lg:order-1">
                 
                 
 
@@ -415,27 +415,27 @@
 
                 <!-- 2. BOTÕES DE CONTROLE GERAIS -->
                 <div class="grid grid-cols-2 gap-2 mb-4 flex-shrink-0">
-                    <button id="show-card-scanner-btn" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg text-xs shadow-sm transition-all text-center">🔎 Verificar Cartela</button>
-                    <button id="show-card-generator-btn" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-lg text-xs shadow-sm transition-all text-center">🖨️ Gerar Cartelas</button>
+                    <button id="show-card-scanner-btn" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 min-h-[44px] px-4 rounded-lg text-xs shadow-sm transition-all text-center">🔎 Verificar Cartela</button>
+                    <button id="show-card-generator-btn" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 min-h-[44px] px-4 rounded-lg text-xs shadow-sm transition-all text-center">🖨️ Gerar Cartelas</button>
                 </div>
                 
                 <!-- AÇÕES EXTRAS -->
                 <div class="flex flex-col gap-2 mb-4 flex-shrink-0">
                     <div class="grid grid-cols-2 gap-2">
-                        <button id="save-to-file-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg text-xs shadow-lg transition-all text-center" data-label-key="saveToFileButton">💾 Salvar (PC)</button>
-                        <label id="load-from-file-btn" for="load-from-file-input" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-4 rounded-lg text-xs shadow-lg transition-all text-center cursor-pointer" data-label-key="loadFromFileButton">📂 Carregar</label>
+                        <button id="save-to-file-btn" class="w-full min-h-[44px] bg-green-600 hover:bg-green-700 text-white font-bold py-2 min-h-[44px] px-4 rounded-lg text-xs shadow-lg transition-all text-center" data-label-key="saveToFileButton">💾 Salvar (PC)</button>
+                        <label id="load-from-file-btn" for="load-from-file-input" class="w-full min-h-[44px] bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 min-h-[44px] px-4 rounded-lg text-xs shadow-lg transition-all text-center cursor-pointer" data-label-key="loadFromFileButton">📂 Carregar</label>
                         <input type="file" id="load-from-file-input" class="hidden" accept=".json,application/json">
                     </div>
                     <div class="grid grid-cols-2 gap-2">
-                        <button id="interval-btn" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-2 rounded-lg text-xs shadow-lg transition-all text-center flex items-center justify-center gap-1" data-label-key="intervalButton">⏱️ Intervalo</button>
-                        <button id="edit-menu-btn" title="Editar Cardápio" class="bg-slate-300 dark:bg-gray-600 hover:bg-slate-400 dark:hover:bg-gray-500 text-slate-800 dark:text-white font-bold py-2 p-2 rounded-lg text-xs shadow-lg transition-all flex justify-center items-center gap-1">
+                        <button id="interval-btn" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 min-h-[44px] px-2 rounded-lg text-xs shadow-lg transition-all text-center flex items-center justify-center gap-1" data-label-key="intervalButton">⏱️ Intervalo</button>
+                        <button id="edit-menu-btn" title="Editar Cardápio" class="bg-slate-300 dark:bg-gray-600 hover:bg-slate-400 dark:hover:bg-gray-500 text-slate-800 dark:text-white font-bold py-2 min-h-[44px] p-2 rounded-lg text-xs shadow-lg transition-all flex justify-center items-center gap-1">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
                              Cardápio
                         </button>
                     </div>
-                    <button id="share-btn" class="hidden w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-xl text-base shadow-lg transition-all" data-label-key="generateProofButton">🧾 Gerar Prova</button>
-                    <button id="end-event-btn" class="hidden w-full bg-purple-700 hover:bg-purple-800 text-white font-bold py-2 px-4 rounded-lg text-sm shadow-lg transition-all" data-label-key="endEventButton">🛑 Encerrar Evento</button>
-                    <button id="reset-event-btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg text-sm shadow-lg transition-all" data-label-key="resetEventButton">⚠️ Reiniciar Evento</button>
+                    <button id="share-btn" class="hidden w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 min-h-[44px] px-4 rounded-xl text-base shadow-lg transition-all" data-label-key="generateProofButton">🧾 Gerar Prova</button>
+                    <button id="end-event-btn" class="hidden w-full bg-purple-700 hover:bg-purple-800 text-white font-bold py-2 min-h-[44px] px-4 rounded-lg text-sm shadow-lg transition-all" data-label-key="endEventButton">🛑 Encerrar Evento</button>
+                    <button id="reset-event-btn" class="w-full min-h-[44px] bg-red-600 hover:bg-red-700 text-white font-bold py-2 min-h-[44px] px-4 rounded-lg text-sm shadow-lg transition-all" data-label-key="resetEventButton">⚠️ Reiniciar Evento</button>
                 </div>
                 
                 <!-- LEGENDA DE ATALHOS -->
@@ -453,14 +453,14 @@
                 <!-- INSCREVA-SE -->
                 <div class="bg-gray-200 dark:bg-gray-700 p-4 rounded-xl text-center mt-4 flex-shrink-0">
                     <h3 class="text-base font-bold text-sky-400 mb-3" data-label-key="subscribeTitle">Inscreva-se no Canal</h3>
-                    <a href="https://www.youtube.com/@iaecatolico" target="_blank" class="block w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg text-sm shadow-lg transition-all" data-label-key="subscribeButton">Inscrever-se no Canal</a>
+                    <a href="https://www.youtube.com/@iaecatolico" target="_blank" class="block w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 min-h-[44px] px-4 rounded-lg text-sm shadow-lg transition-all" data-label-key="subscribeButton">Inscrever-se no Canal</a>
                 </div>
             </aside>
 
             <!-- COLUNA CENTRAL: PAINEL, NÚMERO ANUNCIado E BRINDES -->
-            <div class="lg:col-span-3 flex flex-col gap-6">
+            <div class="lg:col-span-3 flex flex-col gap-6 order-1 lg:order-2">
                 <!-- PAINEL DE NÚMEROS -->
-                <section id="board-section" class="p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-xl">
+                <section id="board-section" class="p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-xl order-2 lg:order-1">
                     <div class="flex items-center justify-between mb-4 relative">
                         <h2 class="text-xl font-bold text-center text-slate-800 dark:text-slate-300 w-full" data-label-key="bingoBoardTitle">Painel de Números</h2>
                         <button id="fullscreen-board-btn" class="absolute right-0 p-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:bg-gray-600 rounded text-slate-800 dark:text-slate-300 transition-colors" title="Tela Cheia">
@@ -515,26 +515,26 @@
                             <input type="range" id="fs-board-zoom-slider" min="50" max="150" value="100" class="w-full h-2 bg-gray-300 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer">
                         </div>
                         <div class="flex gap-2 w-full sm:w-auto items-center">
-                             <button id="fs-prev-round-btn" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-3 rounded-xl text-sm shadow-lg transition-transform transform hover:scale-105" title="Rodada Anterior">◀</button>
-                             <select id="fs-round-selector" class="bg-white dark:bg-gray-800 text-slate-800 dark:text-white border-2 border-sky-400 font-bold py-2 px-4 rounded-lg text-sm shadow-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+                             <button id="fs-prev-round-btn" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 min-h-[44px] px-3 rounded-xl text-sm shadow-lg transition-transform transform hover:scale-105" title="Rodada Anterior">◀</button>
+                             <select id="fs-round-selector" class="bg-white dark:bg-gray-800 text-slate-800 dark:text-white border-2 border-sky-400 font-bold py-2 min-h-[44px] px-4 rounded-lg text-sm shadow-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
                              </select>
-                             <button id="fs-next-round-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-xl text-sm shadow-lg transition-transform transform hover:scale-105" title="Próxima Rodada">▶</button>
-                             <button id="fs-auto-draw-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-xl text-sm shadow-lg transition-transform transform hover:scale-105 ml-2" data-label-key="autoDrawButton">Sorteio Auto</button>
+                             <button id="fs-next-round-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 min-h-[44px] px-3 rounded-xl text-sm shadow-lg transition-transform transform hover:scale-105" title="Próxima Rodada">▶</button>
+                             <button id="fs-auto-draw-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 min-h-[44px] px-4 rounded-xl text-sm shadow-lg transition-transform transform hover:scale-105 ml-2" data-label-key="autoDrawButton">Sorteio Auto</button>
                         </div>
                     </div>
 
                     </div>
 
                     <div class="mt-4 grid grid-cols-3 gap-2">
-                    <button id="auto-draw-btn-bottom" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl text-sm shadow-lg transition-transform transform hover:scale-105" data-label-key="autoDrawButton">🎰 Sorteio Automático</button>
-                         <button id="verify-btn-bottom" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-xl text-sm shadow-lg transition-transform transform hover:scale-105" data-label-key="verifyButton">✅ Verificar</button>
-                         <button id="clear-round-btn-bottom" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-xl text-sm shadow-lg transition-transform transform hover:scale-105" data-label-key="clearRoundButton">🧹 Limpar Rodada</button>
+                    <button id="auto-draw-btn-bottom" class="w-full min-h-[44px] bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 min-h-[44px] px-4 rounded-xl text-sm shadow-lg transition-transform transform hover:scale-105" data-label-key="autoDrawButton">🎰 Sorteio Automático</button>
+                         <button id="verify-btn-bottom" class="w-full min-h-[44px] bg-green-600 hover:bg-green-700 text-white font-bold py-2 min-h-[44px] px-4 rounded-xl text-sm shadow-lg transition-transform transform hover:scale-105" data-label-key="verifyButton">✅ Verificar</button>
+                         <button id="clear-round-btn-bottom" class="w-full min-h-[44px] bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 min-h-[44px] px-4 rounded-xl text-sm shadow-lg transition-transform transform hover:scale-105" data-label-key="clearRoundButton">🧹 Limpar Rodada</button>
                     </div>
                 </section>
                 
-                <div id="middle-row-section" class="grid grid-cols-1 lg:grid-cols-5 gap-6 items-stretch">
+                <div id="middle-row-section" class="grid grid-cols-1 lg:grid-cols-5 gap-6 items-stretch order-1 lg:order-2">
                     <!-- CONTROLES -->
-                    <div id="controls-panel-left" class="lg:col-span-1 bg-white dark:bg-gray-800 rounded-2xl p-4 w-full mx-auto flex flex-col">
+                    <div id="controls-panel-left" class="lg:col-span-1 bg-white dark:bg-gray-800 rounded-2xl p-4 w-full mx-auto flex flex-col order-2 lg:order-1">
                         <div id="clock" class="text-center text-2xl font-bold text-slate-800 dark:text-slate-300 mb-2"></div>
                         <h2 class="text-lg font-bold text-slate-800 dark:text-slate-300 mb-3 text-center" data-label-key="controlsPanelTitle">Controles</h2>
                         
@@ -556,36 +556,83 @@
                                 <input type="text" id="letter-input" placeholder="L" maxlength="1" class="text-center text-sm uppercase font-bold w-10 p-2 border-2 border-slate-300 dark:border-gray-600 bg-gray-200 dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
                                 <input type="number" id="number-input" placeholder="Nº" class="text-center text-sm font-bold flex-grow p-2 border-2 border-slate-300 dark:border-gray-600 bg-gray-200 dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500" min="1" max="75">
                             </div>
-                            <button type="submit" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold p-2 rounded-lg text-sm shadow-lg" data-label-key="manualAnnounceButton">📢 Anunciar Manual</button>
+                            <button type="submit" class="w-full min-h-[44px] bg-sky-600 hover:bg-sky-700 text-white font-bold p-2 rounded-lg text-sm shadow-lg" data-label-key="manualAnnounceButton">📢 Anunciar Manual</button>
                         </form>
                         <p id="error-message" class="text-red-500 font-bold h-5 mb-1 text-xs text-center"></p>
                         <div class="grid grid-cols-1 gap-2">
-                            <button id="auto-draw-btn-top" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 text-xs rounded-lg shadow-lg" data-label-key="autoDrawButton">🎰 Sorteio Automático</button>
-                            <button id="verify-btn-top" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3 text-xs rounded-lg shadow-lg" data-label-key="verifyButton">✅ Verificar</button>
-                            <button id="clear-round-btn-top" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-3 text-xs rounded-lg shadow-lg" data-label-key="clearRoundButton">🧹 Limpar Rodada</button>
+                            <button id="auto-draw-btn-top" class="w-full min-h-[44px] bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 min-h-[44px] px-3 text-xs rounded-lg shadow-lg" data-label-key="autoDrawButton">🎰 Sorteio Automático</button>
+                            <button id="verify-btn-top" class="w-full min-h-[44px] bg-green-600 hover:bg-green-700 text-white font-bold py-2 min-h-[44px] px-3 text-xs rounded-lg shadow-lg" data-label-key="verifyButton">✅ Verificar</button>
+                            <button id="clear-round-btn-top" class="w-full min-h-[44px] bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 min-h-[44px] px-3 text-xs rounded-lg shadow-lg" data-label-key="clearRoundButton">🧹 Limpar Rodada</button>
                         </div>
                     </div>
                     
                     
-                    <div id="draw-and-prize-section" class="lg:col-span-4 grid grid-cols-1 xl:grid-cols-4 gap-6 relative">
-                        <!-- NÚMERO ANUNCIADO -->
-                        <div class="lg:col-span-4 xl:col-span-3 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 flex flex-col justify-center items-center h-full relative">
-                            <p id="main-display-label" class="text-xl sm:text-2xl font-bold text-slate-600 dark:text-slate-400 tracking-wider uppercase" data-label-key="announcedNumberLabel">Número Anunciado</p>
-                            <!-- Wrapper do Zoom para o Número Anunciado -->
-                            <div id="current-number-wrapper" class="my-4 flex justify-center items-center w-full relative">
-                                 <!-- Container para o número do bingo e para o número do brinde -->
-                                <div id="current-number" class="font-black flex justify-center items-center gap-x-2 sm:gap-x-4 rounded-full aspect-square w-56 sm:w-72 lg:w-80 transition-all duration-300" style="font-size: clamp(5rem, 20vw, 12rem); line-height: 1; visibility: hidden;"></div>
-                                 <!-- Container separado para o sorteio de brinde, para não interferir com o do bingo -->
-                                <div id="prize-draw-display-container" class="absolute inset-0 flex items-center justify-center hidden"></div>
-                            </div>
-                            <div class="mt-4 text-center">
-                                <h3 class="text-xl font-bold text-slate-800 dark:text-slate-300 mb-2" data-label-key="lastNumbersLabel">Últimos 5 Números</h3>
-                                <div id="last-numbers-display" class="flex flex-wrap justify-center gap-3 mb-4"></div>
-                                <div id="last-prizes-container" class="mt-4 text-center hidden pt-4 border-t border-slate-200 dark:border-gray-700">
-                                    <h3 class="text-xl font-bold text-slate-800 dark:text-slate-300 mb-2">Últimos Brindes</h3>
-                                    <div id="last-prizes-display" class="flex flex-wrap justify-center gap-3"></div>
+                    <div id="draw-and-prize-section" class="lg:col-span-4 grid grid-cols-1 xl:grid-cols-4 gap-6 relative order-1 lg:order-2">
+                        <div class="lg:col-span-4 xl:col-span-3 flex flex-col gap-6">
+                            <!-- NÚMERO ANUNCIADO -->
+                            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 flex flex-col justify-center items-center h-full relative">
+                                <p id="main-display-label" class="text-xl sm:text-2xl font-bold text-slate-600 dark:text-slate-400 tracking-wider uppercase" data-label-key="announcedNumberLabel">Número Anunciado</p>
+                                <!-- Wrapper do Zoom para o Número Anunciado -->
+                                <div id="current-number-wrapper" class="my-4 flex justify-center items-center w-full relative">
+                                     <!-- Container para o número do bingo e para o número do brinde -->
+                                    <div id="current-number" class="font-black flex justify-center items-center gap-x-2 sm:gap-x-4 rounded-full aspect-square w-56 sm:w-72 lg:w-80 transition-all duration-300" style="font-size: clamp(5rem, 20vw, 12rem); line-height: 1; visibility: hidden;"></div>
+                                     <!-- Container separado para o sorteio de brinde, para não interferir com o do bingo -->
+                                    <div id="prize-draw-display-container" class="absolute inset-0 flex items-center justify-center hidden"></div>
+                                </div>
+                                <div class="mt-4 text-center">
+                                    <h3 class="text-xl font-bold text-slate-800 dark:text-slate-300 mb-2" data-label-key="lastNumbersLabel">Últimos 5 Números</h3>
+                                    <div id="last-numbers-display" class="flex flex-wrap justify-center gap-3 mb-4"></div>
+                                    <div id="last-prizes-container" class="mt-4 text-center hidden pt-4 border-t border-slate-200 dark:border-gray-700">
+                                        <h3 class="text-xl font-bold text-slate-800 dark:text-slate-300 mb-2">Últimos Brindes</h3>
+                                        <div id="last-prizes-display" class="flex flex-wrap justify-center gap-3"></div>
+                                    </div>
                                 </div>
                             </div>
+                            
+                            <!-- 2. LEILÃO -->
+                            <section id="auction-section" class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl relative flex flex-col justify-center">
+                                <div class="flex items-center justify-between mb-4 relative">
+                                    <h2 class="text-2xl font-bold text-center text-slate-800 dark:text-slate-300 w-full" data-label-key="auctionTitle">Leilão</h2>
+                                    <button id="fullscreen-auction-btn" class="absolute right-0 p-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:bg-gray-600 rounded text-slate-800 dark:text-slate-300 transition-colors" title="Tela Cheia">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                                        </svg>
+                                    </button>
+                                </div>
+                                <form id="auction-form" class="space-y-3 max-w-lg mx-auto w-full">
+                                    <div class="relative text-center flex flex-col items-center justify-center w-full">
+                                        <div id="bid-feedback-container" class="absolute inset-x-0 top-0 bottom-0 z-[9999] pointer-events-none flex justify-center items-center"></div>
+                                        <div class="flex items-center justify-center w-full gap-4 relative z-10">
+                                            <button type="button" id="auction-minus-50-btn" class="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-slate-800 dark:text-white rounded-full w-10 h-10 flex items-center justify-center transition text-xl font-bold p-0 shadow-sm flex-shrink-0" title="Subtrair R$ 50">-</button>
+                                            <div id="auction-current-bid-display" class="text-4xl sm:text-5xl md:text-5xl font-black text-amber-400 py-4 auction-bid-display whitespace-nowrap leading-none px-2 flex-grow flex justify-center w-full">R$ 0,00</div>
+                                            <button type="button" id="auction-plus-50-btn" class="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-slate-800 dark:text-white rounded-full w-10 h-10 flex items-center justify-center transition text-xl font-bold p-0 shadow-sm flex-shrink-0" title="Adicionar R$ 50">+</button>
+                                        </div>
+                                        <input type="hidden" id="auction-item-current-bid" value="0">
+                                    </div>
+                                    <input type="text" id="auction-item-name" placeholder="Nome do Item" class="w-full text-center text-xl font-bold p-3 border-2 border-slate-300 dark:border-gray-600 bg-gray-200 dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <button type="button" id="add-50-bid" class="bg-slate-300 dark:bg-gray-600 hover:bg-slate-400 dark:hover:bg-gray-500 text-slate-800 dark:text-white font-bold py-2 min-h-[44px] px-4 rounded-lg text-lg">+ R$ 50</button>
+                                        <button type="button" id="add-100-bid" class="bg-slate-300 dark:bg-gray-600 hover:bg-slate-400 dark:hover:bg-gray-500 text-slate-800 dark:text-white font-bold py-2 min-h-[44px] px-4 rounded-lg text-lg">+ R$ 100</button>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <input type="number" id="custom-bid-input" placeholder="Valor" class="flex-grow text-center text-base font-bold p-2 border-2 border-slate-300 dark:border-gray-600 bg-gray-200 dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+                                        <button type="button" id="add-custom-bid-btn" class="bg-sky-600 hover:bg-sky-700 text-white font-bold p-2 px-4 rounded-lg">Adicionar</button>
+                                    </div>
+                                    <input type="text" id="auction-winner-name" placeholder="Nome do Arrematador" class="w-full text-center text-xl font-bold p-3 border-2 border-slate-300 dark:border-gray-600 bg-gray-200 dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+                                    
+                                    <!-- NOVO: Wrapper para os botões -->
+                                    <div class="flex gap-2 mt-4">
+                                        <button type="button" id="reset-auction-btn" class="w-1/3 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg text-lg shadow-lg" title="Limpar">Limpar</button>
+                                        <button type="submit" class="w-2/3 bg-emerald-600 hover:bg-emerald-700 text-white font-black py-2 min-h-[44px] px-4 rounded-lg text-lg shadow-[0_0_15px_rgba(16,185,129,0.5)] transform hover:scale-105 transition-all duration-300" data-label-key="sellItemButton">💎 Vender Item</button>
+                                    </div>
+                                </form>
+                                <div id="fs-auction-controls" class="hidden flex-col sm:flex-row gap-4 justify-between items-center mt-4 bg-gray-200 dark:bg-gray-700 p-4 rounded-lg flex-wrap">
+                                    <div class="flex-1">
+                                        <label for="fs-auction-zoom-slider" class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">Zoom do Leilão (<span id="fs-auction-zoom-value">100</span>%)</label>
+                                        <input type="range" id="fs-auction-zoom-slider" min="50" max="250" value="100" class="w-full h-2 bg-gray-300 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer">
+                                    </div>
+                                </div>
+                            </section>
                         </div>
                         
                         <!-- SORTEIO DE BRINDES -->
@@ -599,7 +646,7 @@
                                 </button>
                             </div>
                             <form id="prize-draw-form" class="flex flex-col gap-2 flex-grow">
-                                <button type="button" id="check-drawn-prizes-btn" class="w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-3 rounded-lg text-xs shadow-lg mb-1" data-label-key="checkDrawnPrizesButton">🧐 Conferir Sorteados</button>
+                                <button type="button" id="check-drawn-prizes-btn" class="w-full min-h-[44px] bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 min-h-[44px] px-3 rounded-lg text-xs shadow-lg mb-1" data-label-key="checkDrawnPrizesButton">🧐 Conferir Sorteados</button>
                                 <div class="flex flex-col gap-1">
                                     <label for="prize-draw-min" class="text-xs text-slate-600 dark:text-slate-400" data-label-key="prizeDrawFromLabel">De:</label>
                                     <input type="number" id="prize-draw-min" value="1" class="w-full text-center text-base font-bold p-2 border-2 border-slate-300 dark:border-gray-600 bg-gray-200 dark:bg-gray-700 rounded-lg">
@@ -610,67 +657,22 @@
                                     <input type="checkbox" id="no-repeat-prize-draw" class="h-3 w-3 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
                                     <label for="no-repeat-prize-draw" data-label-key="noRepeatCheckboxLabel">Não repetir sorteados</label>
                                 </div>
-                                <button type="button" id="prize-draw-random-btn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold p-3 rounded-lg text-lg shadow-lg mt-1" data-label-key="prizeDrawRandomButton">🎁 Sortear</button>
+                                <button type="button" id="prize-draw-random-btn" class="w-full min-h-[44px] bg-purple-600 hover:bg-purple-700 text-white font-bold p-3 rounded-lg text-lg shadow-lg mt-1" data-label-key="prizeDrawRandomButton">🎁 Sortear</button>
                                 <input type="text" id="prize-draw-number-manual" data-label-key="prizeDrawTicketNumberPlaceholder" placeholder="Nº Cartela" class="text-center text-base font-bold p-2 border-2 border-slate-300 dark:border-gray-600 bg-gray-200 dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 mt-2">
                                 <input type="text" id="prize-draw-name" data-label-key="prizeDrawNamePlaceholder" placeholder="Nome (Opcional)" class="text-center text-base font-bold p-2 border-2 border-slate-300 dark:border-gray-600 bg-gray-200 dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
                                 <input type="text" id="prize-draw-description" data-label-key="prizeDrawDescriptionPlaceholder" placeholder="Brinde (Opcional)" class="text-center text-base font-bold p-2 border-2 border-slate-300 dark:border-gray-600 bg-gray-200 dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
-                                <button type="submit" class="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-2 px-4 rounded-xl text-sm shadow-lg mt-1" data-label-key="registerPrizeButton">📝 Registrar Brinde</button>
+                                <button type="submit" class="w-full min-h-[44px] bg-pink-600 hover:bg-pink-700 text-white font-bold py-2 min-h-[44px] px-4 rounded-xl text-sm shadow-lg mt-1" data-label-key="registerPrizeButton">📝 Registrar Brinde</button>
                             </form>
                         </div>
                     </div>
                 </div>
-                 <!-- 2. LEILÃO (MOVIDO PARA O PAINEL CENTRAL) -->
-                <section id="auction-section" class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl relative flex flex-col justify-center">
-                    <div class="flex items-center justify-between mb-4 relative">
-         <h2 class="text-2xl font-bold text-center text-slate-800 dark:text-slate-300 w-full" data-label-key="auctionTitle">Leilão</h2>
-         <button id="fullscreen-auction-btn" class="absolute right-0 p-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:bg-gray-600 rounded text-slate-800 dark:text-slate-300 transition-colors" title="Tela Cheia">
-             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-             </svg>
-         </button>
-     </div>
-                    <form id="auction-form" class="space-y-3 max-w-lg mx-auto w-full">
-                        <div class="relative text-center flex flex-col items-center justify-center w-full">
-                            <div id="bid-feedback-container" class="absolute inset-x-0 top-0 bottom-0 z-[9999] pointer-events-none flex justify-center items-center"></div>
-                            <div class="flex items-center justify-center w-full gap-4 relative z-10">
-                                <button type="button" id="auction-minus-50-btn" class="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-slate-800 dark:text-white rounded-full w-10 h-10 flex items-center justify-center transition text-xl font-bold p-0 shadow-sm flex-shrink-0" title="Subtrair R$ 50">-</button>
-                                <div id="auction-current-bid-display" class="text-4xl sm:text-5xl md:text-5xl font-black text-amber-400 py-4 auction-bid-display whitespace-nowrap leading-none px-2 flex-grow flex justify-center w-full">R$ 0,00</div>
-                                <button type="button" id="auction-plus-50-btn" class="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-slate-800 dark:text-white rounded-full w-10 h-10 flex items-center justify-center transition text-xl font-bold p-0 shadow-sm flex-shrink-0" title="Adicionar R$ 50">+</button>
-                            </div>
-                            <input type="hidden" id="auction-item-current-bid" value="0">
-                        </div>
-                        <input type="text" id="auction-item-name" placeholder="Nome do Item" class="w-full text-center text-xl font-bold p-3 border-2 border-slate-300 dark:border-gray-600 bg-gray-200 dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
-                        <div class="grid grid-cols-2 gap-2">
-                            <button type="button" id="add-50-bid" class="bg-slate-300 dark:bg-gray-600 hover:bg-slate-400 dark:hover:bg-gray-500 text-slate-800 dark:text-white font-bold py-2 px-4 rounded-lg text-lg">+ R$ 50</button>
-                            <button type="button" id="add-100-bid" class="bg-slate-300 dark:bg-gray-600 hover:bg-slate-400 dark:hover:bg-gray-500 text-slate-800 dark:text-white font-bold py-2 px-4 rounded-lg text-lg">+ R$ 100</button>
-                        </div>
-                        <div class="flex gap-2">
-                            <input type="number" id="custom-bid-input" placeholder="Valor" class="flex-grow text-center text-base font-bold p-2 border-2 border-slate-300 dark:border-gray-600 bg-gray-200 dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
-                            <button type="button" id="add-custom-bid-btn" class="bg-sky-600 hover:bg-sky-700 text-white font-bold p-2 px-4 rounded-lg">Adicionar</button>
-                        </div>
-                        <input type="text" id="auction-winner-name" placeholder="Nome do Arrematador" class="w-full text-center text-base font-bold p-2 border-2 border-slate-300 dark:border-gray-600 bg-gray-200 dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
-                        <div class="flex gap-2 pt-2">
-                            <button type="button" id="reset-auction-btn" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 px-6 rounded-lg">🧹 Limpar</button>
-                            <button type="submit" class="flex-grow bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-lg text-xl flex items-center justify-center gap-2">
-                                <span data-label-key="sellItemButton">💎 Vender Item</span>
-                                <span id="gavel-icon" class="hidden text-2xl">🔨</span>
-                            </button>
-                        </div>
-                    </form>
-                    <div id="fs-auction-controls" class="hidden flex-col sm:flex-row gap-4 justify-between items-center mt-4 bg-gray-200 dark:bg-gray-700 p-4 rounded-lg flex-wrap">
-                        <div class="flex-1">
-                            <label for="fs-auction-zoom-slider" class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">Zoom do Leilão (<span id="fs-auction-zoom-value">100</span>%)</label>
-                            <input type="range" id="fs-auction-zoom-slider" min="50" max="250" value="100" class="w-full h-2 bg-gray-300 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer">
-                        </div>
-                    </div>
-                </section>
             </div>
 
             <!-- BARRA LATERAL DIREITA: RODADAS, PRÊMIOS E APOIO -->
-            <aside class="lg:col-span-1 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 flex flex-col">
+            <aside class="lg:col-span-1 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 flex flex-col order-2 lg:order-3">
                 <!-- RODADAS E PRÊMIOS -->
                 <div class="flex-grow">
-                    <button id="add-extra-game-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl text-base shadow-lg transition-all mb-4" data-label-key="addExtraRoundButton">➕ Adicionar Rodada Extra</button>
+                    <button id="add-extra-game-btn" class="w-full min-h-[44px] bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl text-base shadow-lg transition-all mb-4" data-label-key="addExtraRoundButton">➕ Adicionar Rodada Extra</button>
                     <h2 class="text-2xl font-bold text-slate-800 dark:text-slate-300 mb-4" data-label-key="roundsAndPrizesTitle">Rodadas e Prêmios</h2>
                     <div id="games-list" class="space-y-4">
                         <!-- As rodadas serão inseridas dinamicamente aqui -->
@@ -682,7 +684,7 @@
                     <!-- APOIO -->
                     <div class="bg-gray-200 dark:bg-gray-700 p-4 rounded-xl text-center">
                         <h3 class="text-base font-bold text-sky-400 mb-3" data-label-key="supportTitle">Apoie o Seminarista 🤝</h3>
-                        <button id="show-donation-modal-btn" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-4 rounded-lg text-sm shadow-lg transition-all" data-label-key="supportButton">🤝 Faça sua Doação</button>
+                        <button id="show-donation-modal-btn" class="w-full min-h-[44px] bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 min-h-[44px] px-4 rounded-lg text-sm shadow-lg transition-all" data-label-key="supportButton">🤝 Faça sua Doação</button>
                     </div>
                 </div>
             </aside>

@@ -9,6 +9,7 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, setDoc, onSnapshot, collection, getDoc, getDocs, writeBatch, enableIndexedDbPersistence } from 'firebase/firestore';
 import firebaseConfig from './firebase-applet-config.json';
+import { sounds } from './audio';
 
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
@@ -109,6 +110,7 @@ let eventId = '';
                     appName: 'Bingo Show',
                     customLogoBase64: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICAgIDxkZWZzPgogICAgICAgIDwhLS0gQmFja2dyb3VuZCBHcmFkaWVudCAtLT4KICAgICAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImJnR3JhZCIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+CiAgICAgICAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMxZTFiNGIiLz4KICAgICAgICAgICAgPHN0b3Agb2Zmc2V0PSI1MCUiIHN0b3AtY29sb3I9IiMzMTJlODEiLz4KICAgICAgICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjNDMzOGNhIi8+CiAgICAgICAgPC9saW5lYXJHcmFkaWVudD4KICAgICAgICAKICAgICAgICA8IS0tIEdvbGRlbiBUZXh0IEdyYWRpZW50IC0tPgogICAgICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iZ29sZEdyYWQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMCUiIHkyPSIxMDAlIj4KICAgICAgICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iI2ZlZjA4YSIvPgogICAgICAgICAgICA8c3RvcCBvZmZzZXQ9IjQwJSIgc3RvcC1jb2xvcj0iI2ZiYmYyNCIvPgogICAgICAgICAgICA8c3RvcCBvZmZzZXQ9IjYwJSIgc3RvcC1jb2xvcj0iI2Q5NzcwNiIvPgogICAgICAgICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiNiNDUzMDkiLz4KICAgICAgICA8L2xpbmVhckdyYWRpZW50PgoKICAgICAgICA8bGluZWFyR3JhZGllbnQgaWQ9InJlZEdyYWQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICAgICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjZWY0NDQ0Ii8+CiAgICAgICAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iIzk5MWIxYiIvPgogICAgICAgIDwvbGluZWFyR3JhZGllbnQ+CgogICAgICAgIDwhLS0gRHJvcCBTaGFkb3dzIC0tPgogICAgICAgIDxmaWx0ZXIgaWQ9ImRyb3BTaGFkb3ciIHg9Ii0yMCUiIHk9Ii0yMCUiIHdpZHRoPSIxNDAlIiBoZWlnaHQ9IjE0MCUiPgogICAgICAgICAgICA8ZmVEcm9wU2hhZG93IGR4PSIwIiBkeT0iMTIiIHN0ZERldmlhdGlvbj0iMTAiIGZsb29kLW9wYWNpdHk9IjAuOCIgZmxvb2QtY29sb3I9IiMwMDAiLz4KICAgICAgICA8L2ZpbHRlcj4KICAgICAgICA8ZmlsdGVyIGlkPSJnbG93IiB4PSItNTAlIiB5PSItNTAlIiB3aWR0aD0iMjAwJSIgaGVpZ2h0PSIyMDAlIj4KICAgICAgICAgICAgPGZlR2F1c3NpYW5CbHVyIHN0ZERldmlhdGlvbj0iOCIgcmVzdWx0PSJibHVyIi8+CiAgICAgICAgICAgIDxmZU1lcmdlPgogICAgICAgICAgICAgICAgPGZlTWVyZ2VOb2RlIGluPSJibHVyIi8+CiAgICAgICAgICAgICAgICA8ZmVNZXJnZU5vZGUgaW49IlNvdXJjZUdyYXBoaWMiLz4KICAgICAgICAgICAgPC9mZU1lcmdlPgogICAgICAgIDwvZmlsdGVyPgogICAgICAgIDxmaWx0ZXIgaWQ9InRleHRHbG93IiB4PSItNTAlIiB5PSItNTAlIiB3aWR0aD0iMjAwJSIgaGVpZ2h0PSIyMDAlIj4KICAgICAgICAgICAgPGZlRHJvcFNoYWRvdyBkeD0iMCIgZHk9IjgiIHN0ZERldmlhdGlvbj0iNiIgZmxvb2Qtb3BhY2l0eT0iMC45IiBmbG9vZC1jb2xvcj0iIzAwMCIvPgogICAgICAgIDwvZmlsdGVyPgogICAgPC9kZWZzPgoKICAgIDwhLS0gQmFja2dyb3VuZCBCYXNlIC0tPgogICAgPHJlY3Qgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIHJ4PSIxMDAiIGZpbGw9InVybCgjYmdHcmFkKSIgZmlsdGVyPSJ1cmwoI2Ryb3BTaGFkb3cpIi8+CiAgICAKICAgIDwhLS0gRGVjb3JhdGl2ZSBPdXRsaW5lIC0tPgogICAgPHJlY3Qgd2lkdGg9IjQ3MiIgaGVpZ2h0PSI0NzIiIHg9IjIwIiB5PSIyMCIgcng9IjgwIiBmaWxsPSJub25lIiBzdHJva2U9InVybCgjZ29sZEdyYWQpIiBzdHJva2Utd2lkdGg9IjgiIHN0cm9rZS1kYXNoYXJyYXk9IjIwIDEwIiBvcGFjaXR5PSIwLjYiLz4KCiAgICA8IS0tIExpZ2h0IFJheXMgLyBTdGFyYnVyc3QgLS0+CiAgICA8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgyNTYsIDIyMCkiPgogICAgICAgIDxwYXRoIGQ9Ik0wIC0xNTAgTDEwIDAgTDAgMTUwIEwtMTAgMCBaIiBmaWxsPSIjZmZmZmZmIiBvcGFjaXR5PSIwLjEiIHRyYW5zZm9ybT0icm90YXRlKDApIi8+CiAgICAgICAgPHBhdGggZD0iTTAgLTE1MCBMMTAgMCBMMCAxNTAgTC0xMCAwIFoiIGZpbGw9IiNmZmZmZmYiIG9wYWNpdHk9IjAuMSIgdHJhbnNmb3JtPSJyb3RhdGUoNDUpIi8+CiAgICAgICAgPHBhdGggZD0iTTAgLTE1MCBMMTAgMCBMMCAxNTAgTC0xMCAwIFoiIGZpbGw9IiNmZmZmZmYiIG9wYWNpdHk9IjAuMSIgdHJhbnNmb3JtPSJyb3RhdGUoOTApIi8+CiAgICAgICAgPHBhdGggZD0iTTAgLTE1MCBMMTAgMCBMMCAxNTAgTC0xMCAwIFoiIGZpbGw9IiNmZmZmZmYiIG9wYWNpdHk9IjAuMSIgdHJhbnNmb3JtPSJyb3RhdGUoMTM1KSIvPgogICAgPC9nPgoKICAgIDwhLS0gQ2VudGVyIEJpbmdvIEJhbGwgLS0+CiAgICA8Y2lyY2xlIGN4PSIyNTYiIGN5PSIyMjAiIHI9IjEzMCIgZmlsbD0idXJsKCNyZWRHcmFkKSIgZmlsdGVyPSJ1cmwoI2Ryb3BTaGFkb3cpIi8+CiAgICAKICAgIDwhLS0gQmFsbCBJbm5lciBoaWdobGlnaHQgLS0+CiAgICA8Y2lyY2xlIGN4PSIyNTYiIGN5PSIyMjAiIHI9IjEzMCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjQiIG9wYWNpdHk9IjAuMyIvPgogICAgCiAgICA8IS0tIFdoaXRlIENpcmNsZSBjZW50ZXIgLS0+CiAgICA8Y2lyY2xlIGN4PSIyNTYiIGN5PSIyMjAiIHI9IjgwIiBmaWxsPSIjZmZmZmZmIiBmaWx0ZXI9InVybCgjZHJvcFNoYWRvdykiLz4KICAgIAogICAgPCEtLSBTdGFyIERldGFpbHMgb24gdGhlIGJhbGwgLS0+CiAgICA8cGF0aCBkPSJNIDE3MCAxNTAgTCAxODAgMTcwIEwgMjAwIDE3MCBMIDE4MCAxODUgTCAxODUgMjA1IEwgMTcwIDE5MCBMIDE1NSAyMDUgTCAxNjAgMTg1IEwgMTQwIDE3MCBMIDE2MCAxNzAgWiIgZmlsbD0idXJsKCNnb2xkR3JhZCkiIC8+CiAgICA8cGF0aCBkPSJNIDM0MCAxNTAgTCAzNTAgMTcwIEwgMzcwIDE3MCBMIDM1MCAxODUgTCAzNTUgMjA1IEwgMzQwIDE5MCBMIDMyNSAyMDUgTCAzMzAgMTg1IEwgMzEwIDE3MCBMIDMzMCAxNzAgWiIgZmlsbD0idXJsKCNnb2xkR3JhZCkiIC8+CgogICAgPCEtLSBCaWcgTnVtYmVyIG9yIEIgLS0+CiAgICA8dGV4dCB4PSIyNTYiIHk9IjI3MCIgZm9udC1mYW1pbHk9IidJbXBhY3QnLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0MCIgZm9udC13ZWlnaHQ9IjkwMCIgZmlsbD0iI2I5MWMxYyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1zdHlsZT0iaXRhbGljIj5CPC90ZXh0PgoKICAgIDwhLS0gQklOR08gVGV4dCAtLT4KICAgIDx0ZXh0IHg9IjI1NiIgeT0iNDQwIiBmb250LWZhbWlseT0iJ0FyaWFsIEJsYWNrJywgSW1wYWN0LCBzYW5zLXNlcmlmIiBmb250LXNpemU9Ijg1IiBmb250LXdlaWdodD0iOTAwIiBmb250LXN0eWxlPSJpdGFsaWMiIGZpbGw9InVybCgjZ29sZEdyYWQpIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWx0ZXI9InVybCgjdGV4dEdsb3cpIiBzdHJva2U9IiM3ODM1MGYiIHN0cm9rZS13aWR0aD0iNCIgbGV0dGVyLXNwYWNpbmc9IjQiPkJJTkdPPC90ZXh0PgogICAgCiAgICA8IS0tIFNIT1cgVGV4dCAtLT4KICAgIDx0ZXh0IHg9IjI1NiIgeT0iNDkwIiBmb250LWZhbWlseT0iJ0FyaWFsIEJsYWNrJywgSW1wYWN0LCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjQ1IiBmb250LXdlaWdodD0iOTAwIiBmb250LXN0eWxlPSJpdGFsaWMiIGZpbGw9IiNmZmZmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbHRlcj0idXJsKCN0ZXh0R2xvdykiIGxldHRlci1zcGFjaW5nPSIxMiI+U0hPVzwvdGV4dD4KCjwvc3ZnPg==',
                     enableSponsorsByNumber: false,
+                    enableSoundEffects: true,
                     enableModalAutoclose: true,
                     modalAutocloseSeconds: 5,
                     sponsorDisplaySeconds: 8,
@@ -248,6 +250,7 @@ let eventId = '';
                     settingsBingoTitleLabel: "Título do Grito de Vitória",
                     settingsBingoTitleDescription: "Personalize o 'grito de vitória'. Mudar para 'AJUDE!' também altera as letras do painel (A-J-U-D-E), ideal para bingos beneficentes.",
                     settingsBoardColorLabel: "Cor de Fundo da Cartela",
+                    settingsSoundEffectsLabel: "Habilitar Efeitos Sonoros",
                     settingsBoardColorDescription: "Escolha a cor de fundo para os números que ainda não foram sorteados no painel principal.",
                     settingsBoardColorResetButton: "🧼 Limpar Cor",
                     settingsDrawnNumberTitle: "Aparência do Número Sorteado",
@@ -685,6 +688,7 @@ function updateAuctionBidDisplay(bid: number) {
 }
 
 function incrementAuctionBid(amount: number) {
+    if (appStore.state.appConfig.enableSoundEffects) sounds.playBid();
     const bidInput = document.getElementById('auction-item-current-bid') as HTMLInputElement;
     if (bidInput) {
         const currentBid = parseInt(bidInput.value, 10) || 0;
@@ -972,7 +976,7 @@ function populateSettingsShortcutsTab() {
                                 
                                 <button id="close-drawn-prizes-btn" class="mt-6 bg-slate-600 hover:bg-slate-700 text-white font-bold py-3 px-8 rounded-full text-lg flex-shrink-0">${appLabels.modalCloseButton}</button>
                              </div>`,
-                donation: `<div class="modal-content bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center"><h2 class="text-3xl font-black text-amber-400 mb-6">${appLabels.donationModalTitle}</h2><p class="text-slate-700 dark:text-slate-300 mb-4">${appLabels.donationModalDescription}</p><div class="space-y-6 text-left"><div class="text-center border-b border-gray-700 pb-6"><p class="text-lg font-bold text-gray-900 dark:text-white mb-4">${appLabels.donationModalPaypalLabel}</p><div class="flex justify-center"><form action="https://www.paypal.com/donate" method="post" target="_top"><input type="hidden" name="hosted_button_id" value="FLVDNY994MNQS" /><input type="image" src="https://www.paypalobjects.com/pt_BR/BR/i/btn/btn_donateCC_LG.gif" border="0" name="submit" title="PayPal - The safer, easier way to pay online!" alt="Faça doações com o botão do PayPal" /></form></div></div><div class="pt-6"><p class="text-lg font-bold text-gray-900 dark:text-white mb-2">${appLabels.donationModalPixLabel}</p><div class="flex flex-col items-center"><div id="pix-key-display" contenteditable="false" class="bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white p-3 rounded-lg text-center text-sm font-mono select-all cursor-text max-w-full overflow-hidden whitespace-nowrap overflow-ellipsis"></div><button id="copy-pix-btn" class="mt-3 w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition-all">${appLabels.donationModalCopyButton}</button></div></div></div><button id="close-donation-btn" class="mt-8 bg-slate-600 hover:bg-slate-700 text-white font-bold py-2 px-6 rounded-full text-lg">${appLabels.modalCloseButton}</button></div>`,
+                donation: `<div class="modal-content bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center"><h2 class="text-3xl font-black text-amber-400 mb-6">${appLabels.donationModalTitle}</h2><p class="text-slate-700 dark:text-slate-300 mb-4">${appLabels.donationModalDescription}</p><div class="space-y-6 text-left"><div class="text-center border-b border-gray-700 pb-6"><p class="text-lg font-bold text-gray-900 dark:text-white mb-4">${appLabels.donationModalPaypalLabel}</p><div class="flex justify-center"><form action="https://www.paypal.com/donate" method="post" target="_blank"><input type="hidden" name="hosted_button_id" value="FLVDNY994MNQS" /><input type="image" src="https://www.paypalobjects.com/pt_BR/BR/i/btn/btn_donateCC_LG.gif" border="0" name="submit" title="PayPal - The safer, easier way to pay online!" alt="Faça doações com o botão do PayPal" /></form></div></div><div class="pt-6"><p class="text-lg font-bold text-gray-900 dark:text-white mb-2">${appLabels.donationModalPixLabel}</p><div class="flex flex-col items-center"><div id="pix-key-display" contenteditable="false" class="bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white p-3 rounded-lg text-center text-sm font-mono select-all cursor-text max-w-full overflow-hidden whitespace-nowrap overflow-ellipsis"></div><button id="copy-pix-btn" class="mt-3 w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition-all">${appLabels.donationModalCopyButton}</button></div></div></div><button id="close-donation-btn" class="mt-8 bg-slate-600 hover:bg-slate-700 text-white font-bold py-2 px-6 rounded-full text-lg">${appLabels.modalCloseButton}</button></div>`,
                 finalWinners: `<div class="modal-content bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-5xl w-full text-center h-[95vh] flex flex-col justify-between">
                                 <h2 id="end-title" class="text-5xl font-black text-yellow-400 mb-4 flex-shrink-0">${appLabels.finalWinnersModalTitle}</h2>
                                 <div id="end-winner-display" class="flex-grow flex items-center justify-center p-4 min-h-[150px]">
@@ -1028,6 +1032,12 @@ function populateSettingsShortcutsTab() {
                                     </div>
                                 </div>
                                 <button id="remove-custom-logo-btn" class="mt-2 bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-3 rounded-lg text-sm">${appLabels.settingsLogoRemoveButton}</button>
+                            </div>
+                             <div class="border-b border-gray-700 pb-6">
+                                <div class="flex items-center gap-3 bg-gray-200 dark:bg-gray-700 p-3 rounded-lg mb-4">
+                                    <input type="checkbox" id="enable-sound-effects" class="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                    <label for="enable-sound-effects" class="text-slate-800 dark:text-slate-200 font-medium">${appLabels.settingsSoundEffectsLabel}</label>
+                                </div>
                             </div>
                              <div class="border-b border-gray-700 pb-6">
                                 <h3 class="text-xl font-bold text-slate-700 dark:text-slate-300 mb-2">${appLabels.settingsModalAutocloseTitle}</h3>
@@ -1485,6 +1495,7 @@ function showDrawnPrizesModal() {
             deleteBtn.title = `Excluir sorteio do número ${num}`;
             deleteBtn.onclick = (e) => {
                 e.stopPropagation();
+                if (appStore.state.appConfig.enableSoundEffects) sounds.playError();
                 const index = appStore.state.drawnPrizeNumbers.indexOf(num);
                 if (index > -1) {
                     appStore.state.drawnPrizeNumbers.splice(index, 1);
@@ -1776,6 +1787,7 @@ function populateSettingsSponsorsTab() {
 }
 
 function showSettingsModal() {
+    if (appStore.state.appConfig.enableSoundEffects) sounds.playClick();
     const { appConfig, appLabels } = appStore.state;
     DOMElements.settingsModal.innerHTML = getModalTemplates().settings;
     DOMElements.settingsModal.classList.remove('hidden');
@@ -1911,6 +1923,15 @@ function showSettingsModal() {
         autocloseValue.textContent = seconds.toString();
     });
     autocloseTimer.addEventListener('change', () => appStore.debouncedSave());
+
+    const soundEffectsCheckbox = document.getElementById('enable-sound-effects') as HTMLInputElement;
+    if (soundEffectsCheckbox) {
+        soundEffectsCheckbox.checked = appConfig.enableSoundEffects !== false;
+        soundEffectsCheckbox.addEventListener('change', (e) => {
+            appStore.state.appConfig.enableSoundEffects = (e.target as HTMLInputElement).checked;
+            appStore.debouncedSave();
+        });
+    }
 
     const syncToggle = document.getElementById('online-sync-toggle') as HTMLInputElement;
     syncToggle.checked = appConfig.onlineSyncEnabled === true;
@@ -2532,6 +2553,9 @@ function applyAuctionZoom(scale: number) {
                 showError(`O número ${number} já foi anunciado.`);
                 return;
             }
+            
+            if (appConfig.enableSoundEffects) sounds.playDrawNumber();
+
             const letter = getLetterForNumber(number);
             if (!letter) {
                 showError(`Número inválido. Digite um valor entre 1 e 75.`);
@@ -2858,6 +2882,7 @@ function applyAuctionZoom(scale: number) {
 
             const finishAnimation = (drawnNumber: number) => {
                 const { appConfig } = appStore.state;
+                if (appStore.state.appConfig.enableSoundEffects) sounds.playDrawNumber();
                 clearTimeout(spinTimeout);
                 if(cycloneInterval) clearInterval(cycloneInterval);
                 const letter = getLetterForNumber(drawnNumber);
@@ -2903,6 +2928,7 @@ function applyAuctionZoom(scale: number) {
             const game = gamesData[activeGameNumber];
             if (!game) return;
             
+            if (appConfig.enableSoundEffects) sounds.playError();
             appStore.removeCalledNumber(number);
 
             // Re-aplicar animação ao novo último número se houver
@@ -2962,6 +2988,7 @@ function applyAuctionZoom(scale: number) {
         }
 
         function startNewRound() {
+            if (appStore.state.appConfig.enableSoundEffects) sounds.playReset();
             appStore.clearActiveRound();
             loadRoundState(appStore.state.activeGameNumber);
             const activeGameItem = DOMElements.gamesListEl.querySelector(`.game-item[data-game-number="${appStore.state.activeGameNumber}"]`);
@@ -3285,7 +3312,7 @@ function applyAuctionZoom(scale: number) {
             const editBtn = document.createElement('button');
             editBtn.innerHTML = '✏️';
             editBtn.title = `Editar Rodada ${gameNumber}`;
-            editBtn.className = 'text-lg hover:text-sky-400 transition-colors';
+            editBtn.className = 'text-lg hover:text-sky-400 transition-colors w-11 h-11 flex items-center justify-center bg-gray-100 dark:bg-gray-600 rounded-lg shadow-sm';
             editBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 showRoundEditModal(gameNumber.toString());
@@ -3293,7 +3320,7 @@ function applyAuctionZoom(scale: number) {
 
             const colorPicker = document.createElement('input');
             colorPicker.type = 'color';
-            colorPicker.className = 'w-8 h-8 p-0 border-2 border-gray-600 rounded-full cursor-pointer';
+            colorPicker.className = 'w-11 h-11 p-0 border-2 border-gray-600 rounded-full cursor-pointer flex-shrink-0';
             colorPicker.value = gamesData[gameNumber]?.color || '#FFFFFF'; 
             colorPicker.addEventListener('input', (e) => {
                 const newColor = (e.target as HTMLInputElement).value;
@@ -3307,7 +3334,7 @@ function applyAuctionZoom(scale: number) {
             const deleteBtn = document.createElement('button');
             deleteBtn.innerHTML = '🗑️';
             deleteBtn.title = `Excluir Rodada ${gameNumber}`;
-            deleteBtn.className = 'text-lg hover:text-red-500 transition-colors';
+            deleteBtn.className = 'text-lg hover:text-red-500 transition-colors w-11 h-11 flex items-center justify-center bg-gray-100 dark:bg-gray-600 rounded-lg shadow-sm';
             deleteBtn.addEventListener('click', (e) => {
                 e.stopPropagation(); 
                 confirmDeleteRound(gameNumber.toString());
@@ -3332,7 +3359,7 @@ function applyAuctionZoom(scale: number) {
 
                 const input = document.createElement('input');
                 input.type = 'text';
-                input.className = 'prize-input w-full text-sm font-bold p-1 border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-md focus:outline-none focus:ring-1 focus:ring-sky-500';
+                input.className = 'prize-input w-full text-sm font-bold p-2 min-h-[44px] border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-md focus:outline-none focus:ring-1 focus:ring-sky-500';
                 input.value = prizes[prizeKey as keyof typeof prizes];
                 input.dataset.prizeKey = prizeKey;
                 input.addEventListener('change', (e) => {
@@ -3354,6 +3381,7 @@ function applyAuctionZoom(scale: number) {
         }
 
         function addExtraGame() {
+            if (appStore.state.appConfig.enableSoundEffects) sounds.playSuccess();
             const newGameNumber = appStore.addExtraGame();
             const { gamesData } = appStore.state;
             const gameEl = createGameElement(newGameNumber, gamesData[newGameNumber].prizes);
@@ -3371,6 +3399,7 @@ function applyAuctionZoom(scale: number) {
             DOMElements.deleteConfirmModal.classList.remove('hidden');
         
             document.getElementById('confirm-delete-btn')!.addEventListener('click', () => {
+                if (appStore.state.appConfig.enableSoundEffects) sounds.playReset();
                 delete gamesData[gameNumber];
                 
                 const gameEl = document.querySelector(`.game-item[data-game-number="${gameNumber}"]`);
@@ -3663,13 +3692,13 @@ function applyAuctionZoom(scale: number) {
         function renderWinner(winnerData: any) {
             const { gamesData, appLabels } = appStore.state;
             const winnerCard = document.createElement('div');
-            winnerCard.className = 'winner-card bg-gray-700 p-4 rounded-xl shadow-lg transition-transform transform hover:scale-105';
+            winnerCard.className = 'winner-card bg-white dark:bg-gray-700 p-4 rounded-xl shadow-md cursor-pointer transition-transform transform hover:scale-105 border border-slate-200 dark:border-transparent min-h-[44px]';
             winnerCard.dataset.winnerId = winnerData.id.toString();
 
             const prizeText = winnerData.bingoType === 'Sorteio' ? winnerData.prize : `${appLabels[winnerData.bingoType + 'Label' as keyof typeof appLabels]} (${winnerData.prize})`;
-            winnerCard.innerHTML = `<h4 class="text-lg font-bold text-slate-800 dark:text-white">${winnerData.name}</h4>
-                                     <p class="text-sm text-amber-300">${prizeText}</p>
-                                     <p class="text-xs text-slate-400 mt-1">${winnerData.gameNumber === 'Brinde' || winnerData.gameNumber === 'Leilão' ? '' : gamesData[winnerData.gameNumber]?.name || `Rodada ${winnerData.gameNumber}`}</p>`;
+            winnerCard.innerHTML = `<h4 class="text-lg font-bold text-gray-900 dark:text-white">${winnerData.name}</h4>
+                                     <p class="text-sm font-semibold text-amber-500 dark:text-amber-300">${prizeText}</p>
+                                     <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">${winnerData.gameNumber === 'Brinde' || winnerData.gameNumber === 'Leilão' ? '' : gamesData[winnerData.gameNumber]?.name || `Rodada ${winnerData.gameNumber}`}</p>`;
             
             winnerCard.addEventListener('click', () => showWinnerEditModal(winnerData.id));
             
@@ -3698,6 +3727,7 @@ function applyAuctionZoom(scale: number) {
         }
         
         function showCongratsModal(winnerName: string, prize: string) {
+            if (appStore.state.appConfig.enableSoundEffects) sounds.playWinner();
             DOMElements.congratsModal.innerHTML = getModalTemplates().congrats;
             (document.getElementById('congrats-winner-name') as HTMLElement).textContent = winnerName;
             (document.getElementById('congrats-prize-value') as HTMLElement).textContent = `Ganhou: ${prize}`;
@@ -3859,7 +3889,7 @@ function applyAuctionZoom(scale: number) {
             if (isComplete) {
                 gameItem.classList.add('game-completed-style');
                 gameItem.classList.remove('cursor-pointer');
-                buttonContainer.innerHTML = `<button class="w-full bg-gray-500 text-white font-bold py-2 px-4 rounded-lg text-sm cursor-pointer reopen-btn">🔄 Reabrir Rodada</button>`;
+                buttonContainer.innerHTML = `<button class="w-full min-h-[44px] bg-gray-500 text-white font-bold py-2 px-4 rounded-lg text-sm cursor-pointer reopen-btn">🔄 Reabrir Rodada</button>`;
                 gameItem.classList.add('animate-flash-complete');
                 setTimeout(() => gameItem.classList.remove('animate-flash-complete'), 1000);
             } else {
@@ -3874,12 +3904,12 @@ function applyAuctionZoom(scale: number) {
                     const noNumbersPlayed = game && game.calledNumbers && game.calledNumbers.length === 0;
                     
                     if (noNumbersPlayed) {
-                        btnHtml = `<button class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg text-sm transition-all shadow-lg play-btn playing-btn">⏹️ Cancelar</button>`;
+                        btnHtml = `<button class="w-full min-h-[44px] bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg text-sm transition-all shadow-lg play-btn playing-btn">⏹️ Cancelar</button>`;
                     } else {
-                        btnHtml = `<button class="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition-all shadow-lg play-btn playing-btn">▶️ Jogando...</button>`;
+                        btnHtml = `<button class="w-full min-h-[44px] bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition-all shadow-lg play-btn playing-btn">▶️ Jogando...</button>`;
                     }
                 } else {
-                    btnHtml = `<button class="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition-all shadow-lg play-btn">▶️ Jogar</button>`;
+                    btnHtml = `<button class="w-full min-h-[44px] bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition-all shadow-lg play-btn">▶️ Jogar</button>`;
                 }
                 buttonContainer.innerHTML = btnHtml;
             }
@@ -3946,6 +3976,7 @@ function applyAuctionZoom(scale: number) {
                 finalNumber = Math.floor(Math.random() * (max - min + 1)) + min;
             }
 
+            if (appStore.state.appConfig.enableSoundEffects) sounds.playClick();
             appStore.state.drawnPrizeNumbers.push(finalNumber);
 
             const displayContainer = DOMElements.prizeDrawDisplayContainer;
@@ -3988,6 +4019,7 @@ function applyAuctionZoom(scale: number) {
 
             setTimeout(() => {
                 clearInterval(shuffleInterval);
+                if (appStore.state.appConfig.enableSoundEffects) sounds.playWinner();
                 prizeDisplay.textContent = finalNumber.toString();
                 prizeDisplay.classList.add('animate-custom-flash', 'animate-lucky-card');
                 
@@ -4504,6 +4536,7 @@ function showRoundEditModal(gameNumber: string) {
         }
 
         function showCardGeneratorModal() {
+             if (appStore.state.appConfig.enableSoundEffects) sounds.playClick();
              DOMElements.cardGeneratorModal.innerHTML = getModalTemplates().cardGenerator;
              DOMElements.cardGeneratorModal.classList.remove('hidden');
 
@@ -4529,6 +4562,7 @@ function showRoundEditModal(gameNumber: string) {
         let scannerAnimationId: number | null = null;
 
         async function showCardScannerModal() {
+            if (appStore.state.appConfig.enableSoundEffects) sounds.playClick();
             DOMElements.cardScannerModal.innerHTML = getModalTemplates().cardScanner;
             DOMElements.cardScannerModal.classList.remove('hidden');
             
@@ -5175,6 +5209,7 @@ function showRoundEditModal(gameNumber: string) {
             const themeToggleMainBtn = document.getElementById('theme-toggle-main-btn');
             if (themeToggleMainBtn) {
                 themeToggleMainBtn.addEventListener('click', () => {
+                    if (appStore.state.appConfig.enableSoundEffects) sounds.playClick();
                     const themeToggle = document.getElementById('theme-toggle') as HTMLInputElement;
                     // Toggle current value
                     appStore.state.appConfig.isDarkMode = !appStore.state.appConfig.isDarkMode;
@@ -5203,6 +5238,7 @@ function showRoundEditModal(gameNumber: string) {
             });
 
             document.getElementById('reset-auction-btn')!.addEventListener('click', () => {
+                if (appStore.state.appConfig.enableSoundEffects) sounds.playReset();
                 (DOMElements.auctionForm as HTMLFormElement).reset();
                  updateAuctionBidDisplay(0);
                  (document.getElementById('auction-item-current-bid') as HTMLInputElement).value = '0';
@@ -5231,6 +5267,8 @@ function showRoundEditModal(gameNumber: string) {
                 };
                 appStore.state.gamesData['Leilão'].winners.push(winnerData);
                 renderWinner(winnerData);
+                
+                if (appStore.state.appConfig.enableSoundEffects) sounds.playSold();
                 
                 showCongratsModal(winnerName, `${itemName} por R$ ${bid},00`);
                 (document.getElementById('auction-item-name') as HTMLInputElement).value = '';
