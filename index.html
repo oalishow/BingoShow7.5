@@ -296,6 +296,15 @@
         }
         
         /* Estilo base para o número anunciado */
+        #current-number-wrapper {
+             min-height: 20rem; /* Mantém a área estável sem saltos de layout */
+             transition: all 0.3s ease;
+             background: radial-gradient(circle at center, rgba(15, 23, 42, 0.03) 0%, transparent 70%);
+        }
+        .dark #current-number-wrapper {
+             background: radial-gradient(circle at center, rgba(241, 245, 249, 0.03) 0%, transparent 70%);
+        }
+
         #current-number {
              -webkit-text-stroke: 2px #000000; 
              color: #FFFFFF; 
@@ -694,7 +703,7 @@
             <p class="max-w-4xl mx-auto">
                 Este programa é o resultado do Trabalho de Conclusão de Curso de <a href="https://www.instagram.com/oalison.rodrigues" target="_blank" class="text-sky-400 hover:underline">Alison Fernando Rodrigues dos Santos</a>, sob orientação do <a href="https://www.instagram.com/danilonobresant" target="_blank" class="text-sky-400 hover:underline">Prof. Pe. Dr. Danilo Nobre dos Santos</a> Título: "E O VERBO SE FEZ I.A.? DA REFLEXÃO TEOLÓGICA E COMUNICATIVA AO DESENVOLVIMENTO DE SOLUÇÕES PASTORAIS COM INTELIGÊNCIA ARTIFICIAL". (<a href="https://drive.google.com/file/d/14uPBeHCT5aP1ACPLlPpIjfD5J1iLQfyD/view?usp=drive_link" target="_blank" class="text-sky-400 hover:underline">Link para acessar</a>)
                 <br>
-                Desenvolvido inteiramente com a Inteligência Artificial Gemini 2.5 PRO da Google, este projeto demonstra como é possível criar soluções pastorais inovadoras com criatividade e ferramentas de baixo custo ou gratuitas, mesmo sem conhecimentos prévios em programação.
+                Desenvolvido inteiramente com a Inteligência Artificial Gemini 3.1 PRO da Google, este projeto demonstra como é possível criar soluções pastorais inovadoras com criatividade e ferramentas de baixo custo ou gratuitas, mesmo sem conhecimentos prévios em programação.
             </p>
             <p class="mt-2 text-slate-500 dark:text-slate-400">
                 <button id="show-changelog-btn" class="hover:underline text-sky-600 dark:text-sky-400 font-medium">Histórico de Versões</button> | Versão <span id="version" class="font-bold">7.5</span> - <span id="last-updated" class="italic">Carregando...</span>
@@ -727,6 +736,7 @@
     <div id="next-round-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[60] hidden"></div>
     <div id="card-generator-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden"></div>
     <div id="card-scanner-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden"></div>
+    <div id="sponsor-image-editor-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[70] hidden"></div>
 
     <!-- Rodapé para Impressão -->
     <div id="print-footer" class="hidden">

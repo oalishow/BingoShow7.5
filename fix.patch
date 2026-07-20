@@ -1,0 +1,33 @@
+--- index.tsx
++++ index.tsx
+@@ -5060,11 +5060,16 @@
+                             <!-- Split Layout -->
+                             <div class="flex flex-row flex-grow items-stretch align-middle w-full min-h-0">
+                                 <!-- 5x5 GRID Layout (Left side) -->
+-                                                <!-- BINGO Numbers -->
++                                <div class="w-[72%] flex flex-col border-r-[2px] border-black">
++                                    <!-- BINGO Header -->
++                                    <div class="grid grid-cols-5 border-b-[2px] border-black bg-gray-100 flex-shrink-0">
++                                        ${['B', 'I', 'N', 'G', 'O'].map((letter, colIndex) => `
++                                            <div class="font-black text-[11px] uppercase flex items-center justify-center py-0.5 ${colIndex === 4 ? '' : 'border-r-[2px] border-black'}">${letter}</div>
++                                        `).join('')}
++                                    </div>
++                                    <!-- BINGO Numbers -->
+                                     <div class="flex-grow flex flex-col">
+                                         ${[0,1,2,3,4].map((rowIndex) => `
+                                             <div class="grid grid-cols-5 flex-grow ${rowIndex === 4 ? '' : 'border-b-[2px] border-black'}">
+@@ -5097,14 +5102,6 @@
+                         </div>
+                     \`;
+                 });
+-                                   <!-- Premiações abaixo do QR Code -->
+-                                    <div class="flex-grow w-full border-t-[2px] border-black pt-0.5 px-0 flex flex-col gap-[1px] mt-auto bg-gray-50 overflow-hidden">
+-                                        <div class="text-[5px] font-black uppercase text-center w-full leading-tight bg-gray-200 border border-black py-[1px]">Premiações</div>
+-                                        \${gridSideText}
+-                                    </div>
+-                                </div>
+-                            </div>
+-                        </div>
+-                    \`;
+-                });
+                 const resolvedBatchHTML = await Promise.all(batchPromises);

@@ -6,6 +6,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
+    const buildTimestamp = Date.now();
     return {
       server: {
         port: 3000,
@@ -14,12 +15,13 @@ export default defineConfig(({ mode }) => {
       },
       plugins: [
         VitePWA({
-          registerType: 'prompt',
+          registerType: 'autoUpdate',
           devOptions: {
             enabled: true,
             type: 'module',
           },
           workbox: {
+            cleanupOutdatedCaches: true,
             globPatterns: ['**/*.{js,css,html,ico,png,svg,json,tsx,ts}'],
             runtimeCaching: [
               {
@@ -144,6 +146,15 @@ export default defineConfig(({ mode }) => {
       resolve: {
         alias: {
           '@': path.resolve(__dirname, '.'),
+        }
+      },
+      build: {
+        rollupOptions: {
+          output: {
+            entryFileNames: `assets/[name]-[hash]-${buildTimestamp}.js`,
+            chunkFileNames: `assets/[name]-[hash]-${buildTimestamp}.js`,
+            assetFileNames: `assets/[name]-[hash]-${buildTimestamp}.[ext]`,
+          }
         }
       }
     };

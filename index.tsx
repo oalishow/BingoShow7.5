@@ -44,7 +44,14 @@ let eventId = '';
                     "Espetinho - R$ 8,00", "Pastel - R$ 6,00", "Porção de Fritas - R$ 15,00"
                 ],
                 drawnPrizeNumbers: [] as number[],
-                versionHistory: `**v7.3.0 (Atual)**
+                versionHistory: `**v7.6.0 (Atual)**
+- **MODO CLARO OTIMIZADO:** Melhoria na legibilidade dos patrocinadores e cardápio durante o modo claro no painel de intervalo.
+- **SEGURANÇA:** Inclusão de senha opcional de 4 dígitos para proteger o Gerador de Cartelas.
+- **LAYOUT DE IMPRESSÃO:** Novas opções automáticas e manuais para impressão de cartelas em PDF.
+- **CÓDIGO DE CARTELAS:** Código de verificação (CÓD) reduzido para 4 caracteres visando facilitar a checagem manual.
+- **BACKUP:** Download automático de cartelas geradas via HTML para evitar perda.
+
+**v7.3.0**
 - **NOVO LOGOTIPO:** Atualização do logotipo principal para um design mais colorido e moderno com gradientes e efeito 3D.
 - **DESIGN DO PAINEL:** Reformulação completa do painel de rodada ativa para o Modo Claro, utilizando bordas suaves, sombras e fundo branco para maior contraste e profissionalismo.
 - **LEGIBILIDADE DE PRÊMIOS:** Aumento significativo no tamanho da fonte dos prêmios e aplicação de contorno preto (text-stroke) nos valores, garantindo visibilidade máxima em projetores e ambientes iluminados.
@@ -114,8 +121,26 @@ let eventId = '';
                     enableModalAutoclose: true,
                     modalAutocloseSeconds: 5,
                     sponsorDisplaySeconds: 8,
+                    showSponsorCountdown: true,
                     sponsorTransitionEffect: 'fade',
                     showMenuInBreak: true,
+                    sponsorEditorReusableBg: '',
+                    sponsorEditorReusableBgOpacity: 100,
+                    cardGeneratorPin: '',
+                    cardGeneratorConfig: {
+                        title: '',
+                        location: '',
+                        date: '',
+                        price: '',
+                        quantity: 120,
+                        showTitle: true,
+                        showLocationDate: true,
+                        showPrice: true,
+                        showPrizes: true,
+                        showQRCode: true,
+                        showVerificationCode: true,
+                        color: '#0ea5e9'
+                    },
                     sponsorsByNumber: {} as Record<number, {name: string, image: string}>,
                     globalSponsor: { name: '', image: '' },
                     shortcuts: {
@@ -370,6 +395,16 @@ let eventId = '';
                 this.state.menuItems = state.menuItems || [ "Refrigerante - R$ 5,00", "Cerveja - R$ 7,00", "Água - R$ 3,00", "Espetinho - R$ 8,00", "Pastel - R$ 6,00", "Porção de Fritas - R$ 15,00" ];
                 this.state.drawnPrizeNumbers = state.drawnPrizeNumbers || [];
                 this.state.versionHistory = state.versionHistory || this.state.versionHistory;
+                if (!this.state.versionHistory.includes('v7.6')) {
+                    this.state.versionHistory = `**v7.6.0 (Atual)**
+- **MODO CLARO OTIMIZADO:** Melhoria na legibilidade dos patrocinadores e cardápio durante o modo claro no painel de intervalo.
+- **SEGURANÇA:** Inclusão de senha opcional de 4 dígitos para proteger o Gerador de Cartelas.
+- **LAYOUT DE IMPRESSÃO:** Novas opções automáticas e manuais para impressão de cartelas em PDF.
+- **CÓDIGO DE CARTELAS:** Código de verificação (CÓD) reduzido para 4 caracteres visando facilitar a checagem manual.
+- **BACKUP:** Download automático de cartelas geradas via HTML para evitar perda.
+
+` + this.state.versionHistory.replace('(Atual)', '');
+                }
                 const loadedConfig = state.appConfig || {};
                 
                 // Migração: Se existir customLogo mas não customLogoBase64, promove para o novo campo
@@ -446,7 +481,7 @@ let eventId = '';
                         }
                     }
                     await Promise.all(imageSavePromises);
-                    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(stateToStore));
+                    safeLocalStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(stateToStore));
                     renderUpdateInfo();
                 } catch (error) {
                     console.error("Falha ao salvar estado no localStorage:", error);
@@ -455,17 +490,19 @@ let eventId = '';
 
             async loadStateFromLocalStorage(): Promise<boolean> {
                 try {
-                    const savedState = localStorage.getItem(LOCAL_STORAGE_KEY);
+                    const savedState = safeLocalStorage.getItem(LOCAL_STORAGE_KEY);
                     if (savedState) {
                         const appState = JSON.parse(savedState);
-                        this.loadStateFromObject(appState);
-                        await loadSponsorImages();
-                        // Load cartelas from IndexedDB after loading standard state
-                        const cards = await loadAllCardsFromDB();
-                        if (cards) {
-                            appStore.state.cardsData = Object.assign(appStore.state.cardsData, cards);
+                        if (appState && typeof appState === 'object') {
+                            this.loadStateFromObject(appState);
+                            await loadSponsorImages();
+                            // Load cartelas from IndexedDB after loading standard state
+                            const cards = await loadAllCardsFromDB();
+                            if (cards) {
+                                appStore.state.cardsData = Object.assign(appStore.state.cardsData, cards);
+                            }
+                            return true;
                         }
-                        return true;
                     }
                     return false;
                 } catch (error) {
@@ -530,7 +567,7 @@ let eventId = '';
         let winnerDisplayTimeout: any; 
 
         // --- Constants ---
-        const currentVersion = "7.5"; // Foco 100% Local
+        const currentVersion = "7.6"; // Otimizações
         const buildInfo = "Build: 01/07/2026 - 12:24"; // Data e hora em formato DD/MM/AAAA 
         const DYNAMIC_LETTERS = ['B', 'I', 'N', 'G', 'O'];
         const DYNAMIC_LETTERS_AJUDE = ['A', 'J', 'U', 'D', 'E'];
@@ -603,6 +640,7 @@ let eventId = '';
             showCardGeneratorBtn: document.getElementById('show-card-generator-btn'),
             cardGeneratorModal: document.getElementById('card-generator-modal'),
             cardScannerModal: document.getElementById('card-scanner-modal'),
+            sponsorImageEditorModal: document.getElementById('sponsor-image-editor-modal'),
         };
 
 function renderCustomLogo() {
@@ -871,13 +909,22 @@ function populateSettingsShortcutsTab() {
                                 </div>`,
                 sponsorDisplay: `<div class="modal-content text-center flex flex-col items-center justify-center p-4 m-auto w-full">
                                     <div id="sponsor-display-content-wrapper" class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl transition-transform duration-300 w-full max-w-7xl relative">
-                                        <div id="sponsor-display-content" class="flex flex-col items-center justify-center h-full">
+                                        <div id="sponsor-display-content" class="flex flex-col items-center justify-center h-full relative">
                                             <div id="sponsor-info-display" class="flex flex-col items-center justify-center animate-fade-in-up p-4 w-full h-[60vh] max-h-[600px]">
                                                 <img id="sponsor-image" src="" class="max-w-full max-h-full object-contain rounded-lg shadow-lg mb-6">
                                                 <p id="sponsor-name" class="font-bold text-amber-400 text-[52px]"></p>
                                             </div>
                                             <div id="sponsor-number-zoom-wrapper" class="absolute top-4 left-4 origin-top-left">
                                                 <div id="sponsor-number-display" class="font-black text-gray-900 dark:text-white flex justify-center items-center gap-x-2 rounded-full shadow-lg animate-bounce-in w-[150px] h-[150px] text-[80px]"></div>
+                                            </div>
+                                            <div id="sponsor-countdown-wrapper" class="absolute top-4 right-4 hidden">
+                                                <div class="relative w-[100px] h-[100px] flex items-center justify-center">
+                                                    <svg class="w-full h-full -rotate-90 transform" viewBox="0 0 100 100">
+                                                        <circle cx="50" cy="50" r="45" class="text-gray-200 dark:text-gray-700 stroke-current" stroke-width="10" fill="transparent"></circle>
+                                                        <circle id="sponsor-countdown-circle" cx="50" cy="50" r="45" class="text-amber-500 stroke-current transition-all duration-1000 ease-linear" stroke-width="10" fill="transparent" stroke-dasharray="283" stroke-dashoffset="0"></circle>
+                                                    </svg>
+                                                    <span id="sponsor-countdown-text" class="absolute text-3xl font-bold text-gray-700 dark:text-white"></span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -917,17 +964,17 @@ function populateSettingsShortcutsTab() {
                 congrats: `<div class="modal-content bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-2xl w-full text-center"><h2 class="text-5xl font-black text-yellow-400">${appLabels.congratsModalTitle}</h2><div id="congrats-winner-name" contenteditable="true" class="text-4xl font-bold text-gray-900 dark:text-white my-4 focus:outline-none focus:ring-2 ring-amber-500 rounded-lg px-2"></div><div id="congrats-prize-value" contenteditable="true" class="text-2xl text-slate-700 dark:text-slate-300 mb-6 focus:outline-none focus:ring-2 ring-amber-500 rounded-lg px-2"></div><p class="text-2xl text-sky-300 mt-4">${appLabels.congratsModalMessage}</p><button id="close-congrats-modal-btn" class="mt-8 bg-slate-600 hover:bg-slate-700 text-white font-bold py-3 px-8 rounded-full text-lg">${appLabels.congratsModalCloseButton}</button></div>`,
                 eventBreak: `<div class="modal-content bg-white dark:bg-gray-800/90 backdrop-blur-sm p-8 rounded-2xl shadow-2xl w-full h-full text-center flex flex-col justify-between">
                                 <header class="flex-shrink-0">
-                                    <h2 id="event-break-title" class="text-6xl font-black text-sky-400">${appLabels.intervalModalTitle}</h2>
+                                    <h2 id="event-break-title" class="text-6xl font-black text-sky-600 dark:text-sky-400">${appLabels.intervalModalTitle}</h2>
                                 </header>
                                 <main class="flex-grow my-8 grid grid-cols-1 md:grid-cols-2 gap-8 overflow-hidden relative z-10 min-h-0">
-                                    <div id="break-left-column" class="flex flex-col items-center bg-black/20 p-6 rounded-xl h-full overflow-hidden min-h-0">
-                                        <h3 id="break-left-title" class="text-5xl font-bold text-amber-400 mb-6 flex-shrink-0">Cardápio</h3>
+                                    <div id="break-left-column" class="flex flex-col items-center bg-gray-100 dark:bg-black/20 p-6 rounded-xl border border-gray-200 dark:border-transparent h-full overflow-hidden min-h-0">
+                                        <h3 id="break-left-title" class="text-5xl font-bold text-amber-600 dark:text-amber-400 mb-6 flex-shrink-0">Cardápio</h3>
                                         <div id="break-left-content" class="flex-grow w-full h-full flex items-center justify-center text-7xl font-black text-gray-900 dark:text-white text-center transition-opacity duration-500 opacity-0 min-h-0"></div>
                                     </div>
-                                    <div id="break-right-column" class="flex flex-col items-center bg-black/20 p-6 rounded-xl h-full overflow-hidden relative min-h-0">
+                                    <div id="break-right-column" class="flex flex-col items-center bg-gray-100 dark:bg-black/20 p-6 rounded-xl border border-gray-200 dark:border-transparent h-full overflow-hidden relative min-h-0">
                                         <div class="flex items-center justify-between w-full mb-6 flex-shrink-0">
                                             <div class="w-12"></div>
-                                            <h3 id="break-right-title" class="text-5xl font-bold text-amber-400">Apoio</h3>
+                                            <h3 id="break-right-title" class="text-5xl font-bold text-amber-600 dark:text-amber-400">Apoio</h3>
                                             <button id="toggle-sponsors-fullscreen-btn" class="w-12 h-12 bg-slate-700 hover:bg-slate-600 rounded-full flex items-center justify-center text-white cursor-pointer z-20 transition-colors" title="Tela Cheia">
                                                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
@@ -1071,6 +1118,13 @@ function populateSettingsShortcutsTab() {
                                     <label for="theme-toggle" class="text-slate-800 dark:text-slate-200 font-medium">Modo Escuro (Desmarque para Modo Claro)</label>
                                 </div>
                             </div>
+                            <div class="border-b border-gray-700 pb-6 mt-6">
+                                <h3 class="text-xl font-bold text-slate-700 dark:text-slate-300 mb-2">Segurança (Área Restrita)</h3>
+                                <p class="text-sm text-slate-600 dark:text-slate-400 mb-2">Configure uma senha para proteger o acesso ao Gerador de Cartelas e impedir edições indesejadas.</p>
+                                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Senha (PIN de 4 dígitos):</label>
+                                <input type="password" id="card-generator-pin-input" maxlength="4" placeholder="Ex: 1234 (Deixe vazio para desativar)" class="w-full md:w-1/2 p-3 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-sky-500 focus:border-sky-500 font-black tracking-widest">
+                            </div>
+                            
                             <div class="border-b border-gray-700 pb-6">
                                 <label class="block text-xl font-bold text-slate-700 dark:text-slate-300 mb-2">${appLabels.settingsBingoTitleLabel}</label>
                                 <p class="text-xs text-slate-600 dark:text-slate-400 mb-4">${appLabels.settingsBingoTitleDescription}</p>
@@ -1119,6 +1173,13 @@ function populateSettingsShortcutsTab() {
                                            <option value="random">Aleatório</option>
                                        </select>
                                    </div>
+                                   <div class="flex items-center gap-3 bg-gray-200 dark:bg-gray-700 p-3 rounded-lg">
+                                       <input type="checkbox" id="show-sponsor-countdown" class="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                       <div>
+                                           <label for="show-sponsor-countdown" class="block text-sm font-bold text-slate-700 dark:text-slate-300">Mostrar Contagem Regressiva</label>
+                                           <p class="text-xs text-slate-500 dark:text-slate-400">Exibe um cronômetro ao lado do patrocinador</p>
+                                       </div>
+                                   </div>
                                </div>
                            </div>
                             <div class="border-b border-gray-700 pb-6 mb-6">
@@ -1132,7 +1193,10 @@ function populateSettingsShortcutsTab() {
                                            <input type="text" id="global-sponsor-name" class="block w-full text-sm p-2 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white rounded-lg border border-slate-300 dark:border-gray-600 focus:ring-2 focus:ring-amber-500 outline-none">
                                        </div>
                                        <div>
-                                            <label for="global-sponsor-upload" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Imagem do Patrocinador Global</label>
+                                            <div class="flex items-center justify-between mb-1">
+                                                <label for="global-sponsor-upload" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Imagem do Patrocinador Global</label>
+                                                <button id="generate-global-sponsor-btn" class="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded hover:bg-indigo-200 dark:hover:bg-indigo-800 transition-colors">Gerar com Nome</button>
+                                            </div>
                                            <input type="file" id="global-sponsor-upload" accept="image/*" class="block w-full text-sm text-slate-600 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100">
                                        </div>
                                    </div>
@@ -1191,6 +1255,112 @@ function populateSettingsShortcutsTab() {
                         <button id="close-settings-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-8 rounded-full text-lg">${appLabels.settingsCloseSaveButton}</button>
                     </div>
                 </div>`,
+                sponsorImageEditor: `<div class="modal-content bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Criar Imagem do Patrocinador</h2>
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="space-y-4">
+                                <div>
+                                    <label for="sponsor-editor-text" class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Nome Principal</label>
+                                    <input type="text" id="sponsor-editor-text" class="w-full bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white p-2 rounded-lg text-sm border border-slate-300 dark:border-gray-600 focus:ring-sky-500 focus:border-sky-500 outline-none" placeholder="Nome da empresa ou pessoa">
+                                </div>
+                                <div>
+                                    <label for="sponsor-editor-subtitle" class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Subtítulo (Opcional)</label>
+                                    <input type="text" id="sponsor-editor-subtitle" class="w-full bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white p-2 rounded-lg text-sm border border-slate-300 dark:border-gray-600 focus:ring-sky-500 focus:border-sky-500 outline-none" placeholder="Ex: Apoio Cultural">
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="sponsor-editor-font" class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Fonte</label>
+                                        <select id="sponsor-editor-font" class="w-full bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white p-2 rounded-lg text-sm border border-slate-300 dark:border-gray-600 focus:ring-sky-500 focus:border-sky-500 outline-none">
+                                            <option value="sans-serif">Sans Serif</option>
+                                            <option value="serif">Serif</option>
+                                            <option value="monospace">Monospace</option>
+                                            <option value="Impact, sans-serif">Impact</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="sponsor-editor-shape" class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Forma/Ícone</label>
+                                        <select id="sponsor-editor-shape" class="w-full bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white p-2 rounded-lg text-sm border border-slate-300 dark:border-gray-600 focus:ring-sky-500 focus:border-sky-500 outline-none">
+                                            <option value="">Nenhum</option>
+                                            <optgroup label="Geométricas">
+                                                <option value="circle">Círculo</option>
+                                                <option value="square">Quadrado</option>
+                                                <option value="triangle">Triângulo</option>
+                                                <option value="star">Estrela</option>
+                                                <option value="hexagon">Hexágono</option>
+                                                <option value="diamond">Losango</option>
+                                                <option value="pentagon">Pentágono</option>
+                                                <option value="octagon">Octógono</option>
+                                                <option value="heart">Coração</option>
+                                                <option value="shield">Escudo</option>
+                                            </optgroup>
+                                            <optgroup label="Temática Católica">
+                                                <option value="cross">Cruz</option>
+                                                <option value="dove">Pomba</option>
+                                                <option value="rosary">Terço</option>
+                                            </optgroup>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Fundo Personalizado (Imagem)</label>
+                                    <input type="file" id="sponsor-editor-custom-bg" accept="image/*" class="w-full text-xs text-slate-600 dark:text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100 mb-2">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <label for="sponsor-editor-bg-opacity" class="text-xs text-slate-600 dark:text-slate-400 whitespace-nowrap">Opacidade</label>
+                                        <input type="range" id="sponsor-editor-bg-opacity" min="0" max="100" value="100" class="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                                    </div>
+                                    <div class="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
+                                        <label class="flex items-center"><input type="checkbox" id="sponsor-editor-save-bg" class="mr-1"> Lembrar fundo para próximos</label>
+                                        <button id="sponsor-editor-clear-bg" class="text-red-500 hover:text-red-700">Limpar</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="space-y-4">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="sponsor-editor-bg" class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Fundo 1</label>
+                                        <input type="color" id="sponsor-editor-bg" class="w-full h-10 p-1 bg-gray-100 dark:bg-gray-900 border border-slate-300 dark:border-gray-600 rounded cursor-pointer" value="#1e293b">
+                                    </div>
+                                    <div>
+                                        <label for="sponsor-editor-bg2" class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Fundo 2 (Degradê)</label>
+                                        <input type="color" id="sponsor-editor-bg2" class="w-full h-10 p-1 bg-gray-100 dark:bg-gray-900 border border-slate-300 dark:border-gray-600 rounded cursor-pointer" value="#0f172a">
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="sponsor-editor-text-color" class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Cor Principal</label>
+                                        <input type="color" id="sponsor-editor-text-color" class="w-full h-10 p-1 bg-gray-100 dark:bg-gray-900 border border-slate-300 dark:border-gray-600 rounded cursor-pointer" value="#fbbf24">
+                                    </div>
+                                    <div>
+                                        <label for="sponsor-editor-subtitle-color" class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Cor Subtítulo</label>
+                                        <input type="color" id="sponsor-editor-subtitle-color" class="w-full h-10 p-1 bg-gray-100 dark:bg-gray-900 border border-slate-300 dark:border-gray-600 rounded cursor-pointer" value="#e2e8f0">
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="sponsor-editor-border-color" class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Cor da Borda</label>
+                                        <input type="color" id="sponsor-editor-border-color" class="w-full h-10 p-1 bg-gray-100 dark:bg-gray-900 border border-slate-300 dark:border-gray-600 rounded cursor-pointer" value="#38bdf8">
+                                    </div>
+                                    <div>
+                                        <label for="sponsor-editor-border-width" class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">L. Borda</label>
+                                        <input type="range" id="sponsor-editor-border-width" min="0" max="40" value="0" class="w-full mt-2">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">Pré-visualização</label>
+                            <div class="w-full aspect-video rounded-xl shadow-inner border-2 border-slate-200 dark:border-slate-700 overflow-hidden flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+                                <canvas id="sponsor-editor-canvas" class="max-w-full max-h-full"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-4 mt-8">
+                        <button id="cancel-sponsor-editor-btn" class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-2 px-6 rounded-full">Cancelar</button>
+                        <button id="save-sponsor-editor-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-6 rounded-full">Salvar Imagem</button>
+                    </div>
+                </div>`,
                 roundEdit: `<div class="modal-content bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-lg w-full">
                     <h2 id="round-edit-title" class="text-3xl font-bold text-gray-900 dark:text-white mb-6">Editar Rodada</h2>
                     <div class="space-y-4">
@@ -1230,19 +1400,56 @@ function populateSettingsShortcutsTab() {
                       <div id="next-round-progress" class="bg-sky-500 h-2.5 rounded-full" style="width: 100%; transition: width 5s linear;"></div>
                     </div>
                  </div>`,
-                cardGenerator: `<div class="modal-content bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-2xl w-full text-center flex flex-col">
+                cardGenerator: `<div class="modal-content bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-2xl w-full text-center flex flex-col max-h-[90vh] overflow-y-auto">
                                    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">Gerador de Cartelas</h2>
-                                   <p class="text-slate-600 dark:text-slate-400 mb-6">As cartelas serão geradas no padrão de 6 por folha (A4 - Retrato), contendo QR Code e Número de Série para jogar online.</p>
-                                   <div class="flex flex-col gap-4 mb-6">
+                                   <p class="text-slate-600 dark:text-slate-400 mb-6">As cartelas serão geradas no padrão de 6 por folha (A4 - Retrato).</p>
+                                   <div class="flex flex-col gap-4 mb-6 text-left">
                                        <input type="text" id="card-batch-title" placeholder="Título (Ex: Bingo dos Amigos)" class="w-full text-lg font-bold p-3 border-2 border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
                                        <div class="flex flex-col sm:flex-row gap-2">
                                            <input type="text" id="card-batch-location" placeholder="Onde? (Local do Evento)" class="flex-[2] text-sm font-bold p-3 border-2 border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
                                            <input type="text" id="card-batch-date" placeholder="Data (ex: 20/DEZ)" class="flex-1 text-sm font-bold p-3 border-2 border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
                                            <input type="text" id="card-batch-price" placeholder="Valor (ex: R$ 10,00)" class="flex-1 text-sm font-bold p-3 border-2 border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
                                        </div>
+                                       
+                                       <div class="bg-gray-100 dark:bg-gray-700/50 p-4 rounded-xl border border-gray-200 dark:border-gray-600 space-y-3">
+                                            <h3 class="font-bold text-gray-700 dark:text-gray-300 text-sm uppercase tracking-wider mb-2">Visibilidade na Cartela</h3>
+                                            <div class="grid grid-cols-2 gap-3">
+                                                <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+                                                    <input type="checkbox" id="card-opt-title" checked class="w-4 h-4 rounded text-sky-600 focus:ring-sky-500"> Mostrar Título
+                                                </label>
+                                                <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+                                                    <input type="checkbox" id="card-opt-locdate" checked class="w-4 h-4 rounded text-sky-600 focus:ring-sky-500"> Mostrar Local/Data
+                                                </label>
+                                                <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+                                                    <input type="checkbox" id="card-opt-price" checked class="w-4 h-4 rounded text-sky-600 focus:ring-sky-500"> Mostrar Preço
+                                                </label>
+                                                <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+                                                    <input type="checkbox" id="card-opt-prizes" checked class="w-4 h-4 rounded text-sky-600 focus:ring-sky-500"> Mostrar Prêmios
+                                                </label>
+                                                <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+                                                    <input type="checkbox" id="card-opt-qr" checked class="w-4 h-4 rounded text-sky-600 focus:ring-sky-500"> Mostrar QR Code
+                                                </label>
+                                                <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+                                                    <input type="checkbox" id="card-opt-code" checked class="w-4 h-4 rounded text-sky-600 focus:ring-sky-500"> Mostrar ID p/ Check
+                                                </label>
+                                            </div>
+                                       </div>
+
+                                       <div class="flex items-center justify-between gap-2 mt-2">
+                                            <div class="flex-1 text-left text-sm font-bold text-slate-500 dark:text-slate-400">Quantidade de Folhas:</div>
+                                            <input type="number" id="card-quantity" placeholder="Ex: 20 folhas" value="20" class="w-32 text-center text-lg font-bold p-3 border-2 border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+                                       </div>
+                                       
                                        <div class="flex items-center justify-between gap-2">
-                                            <div class="flex-1 text-left text-sm font-bold text-slate-500 dark:text-slate-400">Total de Grades:</div>
-                                            <input type="number" id="card-quantity" placeholder="Ex: 120 (rendem 20 folhas)" value="120" class="w-48 text-center text-lg font-bold p-3 border-2 border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+                                            <div class="flex-1 text-left text-sm font-bold text-slate-500 dark:text-slate-400">Layout de Impressão:</div>
+                                            <select id="card-cards-per-page" class="w-48 text-center text-sm font-bold p-3 border-2 border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+                                                <option value="auto">Automático</option>
+                                                <option value="1">1 por Folha</option>
+                                                <option value="2">2 por Folha</option>
+                                                <option value="4">4 por Folha</option>
+                                                <option value="6">6 por Folha (Padrão)</option>
+                                                <option value="8">8 por Folha</option>
+                                            </select>
                                        </div>
                                        <div class="flex items-center justify-between border-2 border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 p-3 rounded-lg">
                                            <label class="text-slate-700 dark:text-slate-300 font-bold" for="card-color">Cor das Cartelas:</label>
@@ -1250,7 +1457,15 @@ function populateSettingsShortcutsTab() {
                                        </div>
                                        <div class="flex items-center gap-2 border-2 border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 p-3 rounded-lg">
                                            <input type="checkbox" id="card-reset-series" class="w-5 h-5 rounded cursor-pointer focus:ring-2 focus:ring-sky-500 accent-sky-600 border-gray-300">
-                                           <label class="text-slate-700 dark:text-slate-300 font-bold cursor-pointer" for="card-reset-series">Zerar numeração de série na geração</label>
+                                           <label class="text-slate-700 dark:text-slate-300 font-bold cursor-pointer flex-1" for="card-reset-series">Zerar numeração de série na geração</label>
+                                       </div>
+                                       <div class="flex items-center gap-2 border-2 border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 p-3 rounded-lg">
+                                           <input type="checkbox" id="card-save-template" class="w-5 h-5 rounded cursor-pointer focus:ring-2 focus:ring-sky-500 accent-sky-600 border-gray-300">
+                                           <label class="text-slate-700 dark:text-slate-300 font-bold cursor-pointer flex-1" for="card-save-template">Salvar estas configurações como padrão</label>
+                                       </div>
+                                       <div class="flex items-center gap-2 border-2 border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 p-3 rounded-lg">
+                                           <input type="checkbox" id="card-download-backup" checked class="w-5 h-5 rounded cursor-pointer focus:ring-2 focus:ring-sky-500 accent-sky-600 border-gray-300">
+                                           <label class="text-slate-700 dark:text-slate-300 font-bold cursor-pointer flex-1" for="card-download-backup">Baixar backup das cartelas (Arquivo HTML)</label>
                                        </div>
                                    </div>
                                    <div class="flex justify-center gap-4 mb-4">
@@ -1571,7 +1786,7 @@ function showFinalWinnersModal() {
                     content += `<div class="w-full flex-1 min-h-0 flex items-center justify-center mb-4"><img src="${s.image}" alt="${s.name || 'Patrocinador'}" class="max-w-full max-h-full object-contain drop-shadow-2xl"></div>`;
                 }
                 if (s.name) {
-                    content += `<span class="text-4xl md:text-5xl font-bold text-amber-400 flex-shrink-0">${s.name}</span>`;
+                    content += `<span class="text-4xl md:text-5xl font-bold text-amber-600 dark:text-amber-400 flex-shrink-0">${s.name}</span>`;
                 }
                 sponsorsList.innerHTML = `<div class="flex flex-col items-center justify-center w-full h-full min-h-0">${content}</div>`;
                 applyTransition(sponsorsList, 'in');
@@ -1671,6 +1886,14 @@ function populateSettingsSponsorsTab() {
             appStore.debouncedSave();
         }
     });
+    
+    document.getElementById('generate-global-sponsor-btn')!.addEventListener('click', () => {
+        showSponsorImageEditorModal((base64) => {
+            appStore.state.appConfig.globalSponsor.image = base64;
+            globalSponsorPreview.src = base64;
+            appStore.debouncedSave();
+        }, appStore.state.appConfig.globalSponsor.name || '');
+    });
 
     document.getElementById('remove-global-sponsor-btn')!.addEventListener('click', () => {
         appStore.state.appConfig.globalSponsor = { name: '', image: '' };
@@ -1730,15 +1953,30 @@ function populateSettingsSponsorsTab() {
         });
 
         const imageContainer = document.createElement('div');
-        imageContainer.className = 'flex items-center gap-2';
+        imageContainer.className = 'flex items-center gap-1';
+        
+        const generateBtn = document.createElement('button');
+        generateBtn.className = 'text-[10px] bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 px-1 py-1 rounded hover:bg-indigo-200 dark:hover:bg-indigo-800 transition-colors whitespace-nowrap';
+        generateBtn.textContent = 'Gerar';
+        generateBtn.title = 'Gerar logo com nome';
+        generateBtn.onclick = () => {
+            showSponsorImageEditorModal((base64) => {
+                if (!appStore.state.appConfig.sponsorsByNumber[i]) appStore.state.appConfig.sponsorsByNumber[i] = { name: '', image: '' };
+                appStore.state.appConfig.sponsorsByNumber[i].image = base64;
+                imagePreview.src = base64;
+                imagePreview.style.display = 'block';
+                appStore.debouncedSave();
+                renderMasterBoard();
+            }, appStore.state.appConfig.sponsorsByNumber[i]?.name || '');
+        };
 
         const imageInput = document.createElement('input');
         imageInput.type = 'file';
         imageInput.accept = 'image/*';
-        imageInput.className = 'text-xs text-slate-600 dark:text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100 w-full';
+        imageInput.className = 'text-xs text-slate-600 dark:text-slate-400 file:mr-1 file:py-1 file:px-2 file:rounded-full file:border-0 file:text-[10px] file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100 w-24';
         
         const imagePreview = document.createElement('img');
-        imagePreview.className = 'w-8 h-8 object-contain rounded bg-white';
+        imagePreview.className = 'w-8 h-8 object-contain rounded bg-white flex-shrink-0';
         if (sponsor.image) {
             imagePreview.src = sponsor.image;
             imagePreview.style.display = 'block';
@@ -1746,6 +1984,10 @@ function populateSettingsSponsorsTab() {
             imagePreview.style.display = 'none';
         }
 
+        imageContainer.appendChild(generateBtn);
+        imageContainer.appendChild(imageInput);
+        imageContainer.appendChild(imagePreview);
+        
         imageInput.addEventListener('change', async (e) => {
             const file = (e.target as HTMLInputElement).files?.[0];
             if (file) {
@@ -1784,6 +2026,261 @@ function populateSettingsSponsorsTab() {
         row.appendChild(removeImageBtn);
         container.appendChild(row);
     }
+}
+
+function showSponsorImageEditorModal(onSave: (base64: string) => void, initialText: string = '') {
+    if (appStore.state.appConfig.enableSoundEffects) sounds.playClick();
+    
+    let modal = document.getElementById('sponsor-image-editor-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'sponsor-image-editor-modal';
+        modal.className = 'fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[70] hidden';
+        document.body.appendChild(modal);
+    }
+    
+    modal.innerHTML = getModalTemplates().sponsorImageEditor;
+    modal.classList.remove('hidden');
+
+    const textInput = document.getElementById('sponsor-editor-text') as HTMLInputElement;
+    const subtitleInput = document.getElementById('sponsor-editor-subtitle') as HTMLInputElement;
+    const fontSelect = document.getElementById('sponsor-editor-font') as HTMLSelectElement;
+    
+    const bgInput = document.getElementById('sponsor-editor-bg') as HTMLInputElement;
+    const bg2Input = document.getElementById('sponsor-editor-bg2') as HTMLInputElement;
+    const colorInput = document.getElementById('sponsor-editor-text-color') as HTMLInputElement;
+    const subtitleColorInput = document.getElementById('sponsor-editor-subtitle-color') as HTMLInputElement;
+    const borderColorInput = document.getElementById('sponsor-editor-border-color') as HTMLInputElement;
+    const borderWidthInput = document.getElementById('sponsor-editor-border-width') as HTMLInputElement;
+    const shapeSelect = document.getElementById('sponsor-editor-shape') as HTMLSelectElement;
+    
+    const customBgInput = document.getElementById('sponsor-editor-custom-bg') as HTMLInputElement;
+    const bgOpacityInput = document.getElementById('sponsor-editor-bg-opacity') as HTMLInputElement;
+    const saveBgCheckbox = document.getElementById('sponsor-editor-save-bg') as HTMLInputElement;
+    const clearBgBtn = document.getElementById('sponsor-editor-clear-bg') as HTMLButtonElement;
+    
+    let currentCustomBgBase64 = appStore.state.appConfig.sponsorEditorReusableBg || '';
+    let customBgImage: HTMLImageElement | null = null;
+    bgOpacityInput.value = appStore.state.appConfig.sponsorEditorReusableBgOpacity?.toString() || '100';
+    saveBgCheckbox.checked = !!appStore.state.appConfig.sponsorEditorReusableBg;
+
+    const loadCustomBg = () => {
+        if (!currentCustomBgBase64) {
+            customBgImage = null;
+            renderCanvas();
+            return;
+        }
+        const img = new Image();
+        img.onload = () => {
+            customBgImage = img;
+            renderCanvas();
+        };
+        img.src = currentCustomBgBase64;
+    };
+    
+    if (currentCustomBgBase64) loadCustomBg();
+    
+    const canvas = document.getElementById('sponsor-editor-canvas') as HTMLCanvasElement;
+    const ctx = canvas.getContext('2d')!;
+
+    textInput.value = initialText || 'Patrocinador';
+
+    const renderCanvas = () => {
+        canvas.width = 1200;
+        canvas.height = 630;
+        
+        // Background Gradient
+        const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+        gradient.addColorStop(0, bgInput.value);
+        gradient.addColorStop(1, bg2Input.value);
+        
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Custom Background Image
+        if (customBgImage) {
+            ctx.save();
+            ctx.globalAlpha = parseInt(bgOpacityInput.value) / 100;
+            // Draw image covering the canvas (cover)
+            const scale = Math.max(canvas.width / customBgImage.width, canvas.height / customBgImage.height);
+            const w = customBgImage.width * scale;
+            const h = customBgImage.height * scale;
+            const x = (canvas.width - w) / 2;
+            const y = (canvas.height - h) / 2;
+            ctx.drawImage(customBgImage, x, y, w, h);
+            ctx.restore();
+        }
+        
+        // Border
+        const borderWidth = parseInt(borderWidthInput.value);
+        if (borderWidth > 0) {
+            ctx.lineWidth = borderWidth;
+            ctx.strokeStyle = borderColorInput.value;
+            ctx.strokeRect(borderWidth/2, borderWidth/2, canvas.width - borderWidth, canvas.height - borderWidth);
+        }
+        
+        const fontFamily = fontSelect.value;
+        const shape = shapeSelect.value;
+        const text = textInput.value || 'Patrocinador';
+        const subtitle = subtitleInput.value || '';
+        
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        // Determine layout based on subtitle and shape
+        let contentYOffset = 0;
+        if (shape) contentYOffset = 60; // Push text down if shape is present
+        
+        const centerY = (canvas.height / 2) + contentYOffset;
+        const textY = subtitle ? centerY - 40 : centerY;
+        const subtitleY = centerY + 60;
+        const shapeY = centerY - (subtitle ? 150 : 130);
+        
+        // Draw Shape
+        if (shape) {
+            const size = 100;
+            ctx.save();
+            ctx.translate(canvas.width / 2, shapeY);
+            ctx.fillStyle = colorInput.value;
+            
+            if (['cross', 'dove', 'rosary'].includes(shape)) {
+                // Catholic themed icons using emojis
+                ctx.font = `${size}px sans-serif`;
+                let icon = '';
+                if (shape === 'cross') icon = '✝️';
+                if (shape === 'dove') icon = '🕊️';
+                if (shape === 'rosary') icon = '📿';
+                ctx.fillText(icon, 0, 0);
+            } else {
+                // Geometric shapes
+                ctx.beginPath();
+                if (shape === 'circle') {
+                    ctx.arc(0, 0, size/2, 0, Math.PI * 2);
+                } else if (shape === 'square') {
+                    ctx.rect(-size/2, -size/2, size, size);
+                } else if (shape === 'triangle') {
+                    ctx.moveTo(0, -size/2);
+                    ctx.lineTo(size/2, size/2);
+                    ctx.lineTo(-size/2, size/2);
+                } else if (shape === 'star') {
+                    for (let i = 0; i < 5; i++) {
+                        ctx.lineTo(Math.cos((18+i*72)/180*Math.PI)*size/2, -Math.sin((18+i*72)/180*Math.PI)*size/2);
+                        ctx.lineTo(Math.cos((54+i*72)/180*Math.PI)*size/4, -Math.sin((54+i*72)/180*Math.PI)*size/4);
+                    }
+                } else if (shape === 'hexagon') {
+                    for (let i = 0; i < 6; i++) {
+                        ctx.lineTo(size/2 * Math.cos(i * 2 * Math.PI / 6), size/2 * Math.sin(i * 2 * Math.PI / 6));
+                    }
+                } else if (shape === 'diamond') {
+                    ctx.moveTo(0, -size/2); ctx.lineTo(size/2, 0); ctx.lineTo(0, size/2); ctx.lineTo(-size/2, 0);
+                } else if (shape === 'pentagon') {
+                    for (let i = 0; i < 5; i++) {
+                        ctx.lineTo(size/2 * Math.cos((i * 2 * Math.PI / 5) - Math.PI/2), size/2 * Math.sin((i * 2 * Math.PI / 5) - Math.PI/2));
+                    }
+                } else if (shape === 'octagon') {
+                    for (let i = 0; i < 8; i++) {
+                        ctx.lineTo(size/2 * Math.cos((i * 2 * Math.PI / 8) - Math.PI/8), size/2 * Math.sin((i * 2 * Math.PI / 8) - Math.PI/8));
+                    }
+                } else if (shape === 'heart') {
+                    const topCurveHeight = size * 0.3;
+                    ctx.moveTo(0, size/4);
+                    ctx.bezierCurveTo(0, 0, -size/2, 0, -size/2, -size/4);
+                    ctx.bezierCurveTo(-size/2, -size/2, 0, -size/2, 0, -size/4);
+                    ctx.bezierCurveTo(0, -size/2, size/2, -size/2, size/2, -size/4);
+                    ctx.bezierCurveTo(size/2, 0, 0, 0, 0, size/4);
+                } else if (shape === 'shield') {
+                    ctx.moveTo(0, size/2);
+                    ctx.quadraticCurveTo(-size/2, 0, -size/2, -size/2);
+                    ctx.lineTo(0, -size/2 - size*0.1);
+                    ctx.lineTo(size/2, -size/2);
+                    ctx.quadraticCurveTo(size/2, 0, 0, size/2);
+                }
+                ctx.closePath();
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+        
+        // Main Text
+        let fontSize = 120;
+        ctx.font = `bold ${fontSize}px ${fontFamily}`;
+        
+        // Auto-scale text down if too wide
+        let metrics = ctx.measureText(text);
+        while (metrics.width > canvas.width - 100 && fontSize > 40) {
+            fontSize -= 5;
+            ctx.font = `bold ${fontSize}px ${fontFamily}`;
+            metrics = ctx.measureText(text);
+        }
+        
+        ctx.fillStyle = colorInput.value;
+        ctx.fillText(text, canvas.width / 2, textY);
+        
+        // Subtitle Text
+        if (subtitle) {
+            let subFontSize = 60;
+            ctx.font = `normal ${subFontSize}px ${fontFamily}`;
+            let subMetrics = ctx.measureText(subtitle);
+            while (subMetrics.width > canvas.width - 100 && subFontSize > 20) {
+                subFontSize -= 2;
+                ctx.font = `normal ${subFontSize}px ${fontFamily}`;
+                subMetrics = ctx.measureText(subtitle);
+            }
+            ctx.fillStyle = subtitleColorInput.value;
+            ctx.fillText(subtitle, canvas.width / 2, subtitleY);
+        }
+    };
+
+    textInput.addEventListener('input', renderCanvas);
+    subtitleInput.addEventListener('input', renderCanvas);
+    fontSelect.addEventListener('change', renderCanvas);
+    shapeSelect.addEventListener('change', renderCanvas);
+    bgInput.addEventListener('input', renderCanvas);
+    bg2Input.addEventListener('input', renderCanvas);
+    colorInput.addEventListener('input', renderCanvas);
+    subtitleColorInput.addEventListener('input', renderCanvas);
+    borderColorInput.addEventListener('input', renderCanvas);
+    borderWidthInput.addEventListener('input', renderCanvas);
+    bgOpacityInput.addEventListener('input', renderCanvas);
+    
+    customBgInput.addEventListener('change', async (e) => {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (file) {
+            currentCustomBgBase64 = await fileToBase64(file);
+            loadCustomBg();
+        }
+    });
+
+    clearBgBtn.addEventListener('click', () => {
+        currentCustomBgBase64 = '';
+        customBgInput.value = '';
+        loadCustomBg();
+    });
+    
+    // Initial render delay to ensure canvas is properly measured by browser if needed
+    setTimeout(renderCanvas, 0);
+
+    document.getElementById('cancel-sponsor-editor-btn')!.addEventListener('click', () => {
+        if (appStore.state.appConfig.enableSoundEffects) sounds.playClick();
+        modal!.classList.add('hidden');
+    });
+
+    document.getElementById('save-sponsor-editor-btn')!.addEventListener('click', () => {
+        if (appStore.state.appConfig.enableSoundEffects) sounds.playClick();
+        
+        if (saveBgCheckbox.checked) {
+            appStore.state.appConfig.sponsorEditorReusableBg = currentCustomBgBase64;
+            appStore.state.appConfig.sponsorEditorReusableBgOpacity = parseInt(bgOpacityInput.value);
+        } else {
+            appStore.state.appConfig.sponsorEditorReusableBg = '';
+            appStore.state.appConfig.sponsorEditorReusableBgOpacity = 100;
+        }
+        appStore.debouncedSave();
+
+        const base64 = canvas.toDataURL('image/jpeg', 0.9);
+        onSave(base64);
+        modal!.classList.add('hidden');
+    });
 }
 
 function showSettingsModal() {
@@ -1886,6 +2383,7 @@ function showSettingsModal() {
     const sponsorDisplayTimer = document.getElementById('sponsor-display-timer') as HTMLInputElement;
     const sponsorDisplayValue = document.getElementById('sponsor-display-value') as HTMLElement;
     const sponsorTransitionEffect = document.getElementById('sponsor-transition-effect') as HTMLSelectElement;
+    const showSponsorCountdownCheckbox = document.getElementById('show-sponsor-countdown') as HTMLInputElement;
 
     if (sponsorDisplayTimer && appConfig.sponsorDisplaySeconds !== undefined) {
         sponsorDisplayTimer.value = appConfig.sponsorDisplaySeconds.toString();
@@ -1893,6 +2391,9 @@ function showSettingsModal() {
     }
     if (sponsorTransitionEffect && appConfig.sponsorTransitionEffect !== undefined) {
         sponsorTransitionEffect.value = appConfig.sponsorTransitionEffect;
+    }
+    if (showSponsorCountdownCheckbox && appConfig.showSponsorCountdown !== undefined) {
+        showSponsorCountdownCheckbox.checked = appConfig.showSponsorCountdown;
     }
 
     sponsorDisplayTimer?.addEventListener('input', (e) => {
@@ -1904,6 +2405,11 @@ function showSettingsModal() {
     
     sponsorTransitionEffect?.addEventListener('change', (e) => {
         appStore.state.appConfig.sponsorTransitionEffect = (e.target as HTMLSelectElement).value;
+        appStore.debouncedSave();
+    });
+
+    showSponsorCountdownCheckbox?.addEventListener('change', (e) => {
+        appStore.state.appConfig.showSponsorCountdown = (e.target as HTMLInputElement).checked;
         appStore.debouncedSave();
     });
 
@@ -2235,6 +2741,7 @@ function applyAuctionZoom(scale: number) {
             } else {
                 document.documentElement.classList.remove('dark');
             }
+            updateCurrentNumberDisplay();
         }
 
         function renderAppName() {
@@ -2253,52 +2760,114 @@ function applyAuctionZoom(scale: number) {
             if (buildFooter) buildFooter.innerText = buildInfo;
         }
         
-        // --- Funções de Salvamento ---
+        // --- Funções de Salvamento Resilientes com Fallback ---
         const DB_NAME = 'BingoShowDB';
         const STORE_NAME_IMAGES = 'sponsorImages';
         const STORE_NAME_CARDS = 'cards';
-        let dbPromise: Promise<IDBDatabase>;
+        let dbPromise: Promise<IDBDatabase> | null = null;
+        let isIndexedDBAvailable = true;
 
-        function openDb() {
+        // Memória temporária para quando localStorage ou IndexedDB falharem/forem bloqueados pelo navegador
+        const memoryLocalStorage: Record<string, string> = {};
+        const memoryImagesStore: Record<string, string> = {};
+        const memoryCardsStore: Record<string, any> = {};
+
+        // Wrapper seguro para o localStorage que cai para a memória caso haja bloqueio de cookies de terceiros no iframe do Chrome
+        const safeLocalStorage = {
+            getItem(key: string): string | null {
+                try {
+                    return window.localStorage.getItem(key);
+                } catch (e) {
+                    console.warn(`[Storage] localStorage.getItem indisponível para a chave '${key}'. Usando memória temporária.`, e);
+                    return memoryLocalStorage[key] || null;
+                }
+            },
+            setItem(key: string, value: string): void {
+                try {
+                    window.localStorage.setItem(key, value);
+                } catch (e) {
+                    console.warn(`[Storage] localStorage.setItem indisponível para a chave '${key}'. Usando memória temporária.`, e);
+                    memoryLocalStorage[key] = value;
+                }
+            },
+            removeItem(key: string): void {
+                try {
+                    window.localStorage.removeItem(key);
+                } catch (e) {
+                    console.warn(`[Storage] localStorage.removeItem indisponível para a chave '${key}'. Usando memória temporária.`, e);
+                    delete memoryLocalStorage[key];
+                }
+            }
+        };
+
+        function openDb(): Promise<IDBDatabase> {
+            if (!isIndexedDBAvailable) {
+                return Promise.reject("IndexedDB está desativado ou indisponível.");
+            }
             if (!dbPromise) {
                 dbPromise = new Promise((resolve, reject) => {
-                    const request = indexedDB.open(DB_NAME, 2);
-                    request.onerror = () => reject("Error opening IndexedDB.");
-                    request.onsuccess = () => resolve(request.result);
-                    request.onupgradeneeded = (event) => {
-                        const db = (event.target as IDBOpenDBRequest).result;
-                        if (!db.objectStoreNames.contains(STORE_NAME_IMAGES)) {
-                            db.createObjectStore(STORE_NAME_IMAGES, { keyPath: 'id' });
+                    try {
+                        if (typeof indexedDB === 'undefined') {
+                            isIndexedDBAvailable = false;
+                            reject("IndexedDB não suportado neste navegador.");
+                            return;
                         }
-                        if (!db.objectStoreNames.contains(STORE_NAME_CARDS)) {
-                            db.createObjectStore(STORE_NAME_CARDS, { keyPath: 'uuid' });
-                        }
-                    };
+                        const request = indexedDB.open(DB_NAME, 2);
+                        request.onerror = (e) => {
+                            console.error("[Storage] Erro ao abrir IndexedDB, caindo para modo memória temporária.", e);
+                            isIndexedDBAvailable = false;
+                            reject("Erro ao abrir IndexedDB.");
+                        };
+                        request.onsuccess = () => resolve(request.result);
+                        request.onupgradeneeded = (event) => {
+                            const db = (event.target as IDBOpenDBRequest).result;
+                            if (!db.objectStoreNames.contains(STORE_NAME_IMAGES)) {
+                                db.createObjectStore(STORE_NAME_IMAGES, { keyPath: 'id' });
+                            }
+                            if (!db.objectStoreNames.contains(STORE_NAME_CARDS)) {
+                                db.createObjectStore(STORE_NAME_CARDS, { keyPath: 'uuid' });
+                            }
+                        };
+                    } catch (err) {
+                        console.error("[Storage] Exceção ao inicializar IndexedDB (pode ser restrição de iframe do Chrome):", err);
+                        isIndexedDBAvailable = false;
+                        reject(err);
+                    }
                 });
             }
             return dbPromise;
         }
 
         async function saveSponsorImage(id: string, image: string) {
-            const db = await openDb();
-            return new Promise<void>((resolve, reject) => {
-                const transaction = db.transaction(STORE_NAME_IMAGES, 'readwrite');
-                const store = transaction.objectStore(STORE_NAME_IMAGES);
-                const request = store.put({ id, image });
-                request.onsuccess = () => resolve();
-                request.onerror = () => reject("Failed to save image to IndexedDB.");
-            });
+            try {
+                const db = await openDb();
+                return new Promise<void>((resolve, reject) => {
+                    const transaction = db.transaction(STORE_NAME_IMAGES, 'readwrite');
+                    const store = transaction.objectStore(STORE_NAME_IMAGES);
+                    const request = store.put({ id, image });
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject("Failed to save image to IndexedDB.");
+                });
+            } catch (error) {
+                console.warn(`[Storage] Usando backup em memória para salvar imagem do patrocinador '${id}':`, error);
+                memoryImagesStore[id] = image;
+            }
         }
 
         async function deleteSponsorImage(id: string) {
-            const db = await openDb();
-            return new Promise<void>((resolve, reject) => {
-                const transaction = db.transaction(STORE_NAME_IMAGES, 'readwrite');
-                const store = transaction.objectStore(STORE_NAME_IMAGES);
-                const request = store.delete(id);
-                request.onsuccess = () => resolve();
-                request.onerror = () => reject("Failed to delete image from IndexedDB.");
-            });
+            try {
+                const db = await openDb();
+                return new Promise<void>((resolve, reject) => {
+                    const transaction = db.transaction(STORE_NAME_IMAGES, 'readwrite');
+                    const store = transaction.objectStore(STORE_NAME_IMAGES);
+                    const request = store.delete(id);
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject("Failed to delete image from IndexedDB.");
+                });
+            } catch (error) {
+                console.warn(`[Storage] Usando backup em memória para deletar imagem do patrocinador '${id}':`, error);
+                delete memoryImagesStore[id];
+            }
         }
 
         async function clearAllSponsorImages() {
@@ -2312,7 +2881,10 @@ function applyAuctionZoom(scale: number) {
                     request.onerror = () => reject("Failed to clear images from IndexedDB.");
                 });
             } catch (e) {
-                console.error(e);
+                console.warn("[Storage] Limpando cache de imagens em memória:", e);
+                for (const key in memoryImagesStore) {
+                    delete memoryImagesStore[key];
+                }
             }
         }
 
@@ -2327,41 +2899,55 @@ function applyAuctionZoom(scale: number) {
                     request.onerror = () => reject("Failed to clear cards from IndexedDB.");
                 });
             } catch (e) {
-                console.error(e);
+                console.warn("[Storage] Limpando cartelas em memória:", e);
+                for (const key in memoryCardsStore) {
+                    delete memoryCardsStore[key];
+                }
             }
         }
 
         async function saveCardsBatchToDB(cardsObj: Record<string, any>) {
-            const db = await openDb();
-            return new Promise<void>((resolve, reject) => {
-                const transaction = db.transaction(STORE_NAME_CARDS, 'readwrite');
-                const store = transaction.objectStore(STORE_NAME_CARDS);
-                Object.entries(cardsObj).forEach(([uuid, data]) => {
-                    store.put({ uuid, ...data });
+            try {
+                const db = await openDb();
+                return new Promise<void>((resolve, reject) => {
+                    const transaction = db.transaction(STORE_NAME_CARDS, 'readwrite');
+                    const store = transaction.objectStore(STORE_NAME_CARDS);
+                    Object.entries(cardsObj).forEach(([uuid, data]) => {
+                        store.put({ uuid, ...data });
+                    });
+                    transaction.oncomplete = () => resolve();
+                    transaction.onerror = () => reject("Failed to save cards batch to IndexedDB.");
                 });
-                transaction.oncomplete = () => resolve();
-                transaction.onerror = () => reject("Failed to save cards batch to IndexedDB.");
-            });
+            } catch (error) {
+                console.warn("[Storage] Gravando cartelas temporariamente em memória por indisponibilidade do banco:", error);
+                Object.entries(cardsObj).forEach(([uuid, data]) => {
+                    memoryCardsStore[uuid] = data;
+                });
+            }
         }
 
         async function loadAllCardsFromDB(): Promise<Record<string, any>> {
-            const db = await openDb();
-            return new Promise((resolve, reject) => {
-                const transaction = db.transaction(STORE_NAME_CARDS, 'readonly');
-                const store = transaction.objectStore(STORE_NAME_CARDS);
-                const request = store.getAll();
-                request.onsuccess = () => {
-                    const cardsObj: Record<string, any> = {};
-                    request.result.forEach((item: any) => {
-                        const { uuid, ...rest } = item;
-                        cardsObj[uuid] = rest;
-                    });
-                    resolve(cardsObj);
-                };
-                request.onerror = () => reject("Failed to load cards from IndexedDB.");
-            });
+            try {
+                const db = await openDb();
+                return new Promise((resolve, reject) => {
+                    const transaction = db.transaction(STORE_NAME_CARDS, 'readonly');
+                    const store = transaction.objectStore(STORE_NAME_CARDS);
+                    const request = store.getAll();
+                    request.onsuccess = () => {
+                        const cardsObj: Record<string, any> = {};
+                        request.result.forEach((item: any) => {
+                            const { uuid, ...rest } = item;
+                            cardsObj[uuid] = rest;
+                        });
+                        resolve(cardsObj);
+                    };
+                    request.onerror = () => reject("Failed to load cards from IndexedDB.");
+                });
+            } catch (error) {
+                console.warn("[Storage] Carregando cartelas a partir do cache em memória por indisponibilidade do banco:", error);
+                return { ...memoryCardsStore };
+            }
         }
-
 
         async function loadSponsorImages() {
             try {
@@ -2386,7 +2972,15 @@ function applyAuctionZoom(scale: number) {
                     request.onerror = () => reject("Failed to load images from IndexedDB.");
                 });
             } catch (error) {
-                console.error("Could not initialize IndexedDB for loading images:", error);
+                console.warn("[Storage] Carregando patrocinadores a partir do cache em memória:", error);
+                if (memoryImagesStore['global'] && appStore.state.appConfig.globalSponsor) {
+                    appStore.state.appConfig.globalSponsor.image = memoryImagesStore['global'];
+                }
+                for (const num in memoryImagesStore) {
+                    if (num !== 'global' && appStore.state.appConfig.sponsorsByNumber[num]) {
+                        appStore.state.appConfig.sponsorsByNumber[num].image = memoryImagesStore[num];
+                    }
+                }
             }
         }
 
@@ -2804,6 +3398,9 @@ function applyAuctionZoom(scale: number) {
             const cleanup = () => {
                 document.removeEventListener('keydown', handleKeydown);
                 clearTimeout(floatingNumberTimeout as ReturnType<typeof setTimeout>);
+                if ((window as any).sponsorCountdownInterval) {
+                    clearInterval((window as any).sponsorCountdownInterval);
+                }
             };
 
             const confirmAndAnnounce = () => {
@@ -2831,10 +3428,43 @@ function applyAuctionZoom(scale: number) {
             cancelBtn.addEventListener('click', cancelDraw);
 
             clearTimeout(floatingNumberTimeout as ReturnType<typeof setTimeout>);
+            if ((window as any).sponsorCountdownInterval) {
+                clearInterval((window as any).sponsorCountdownInterval);
+            }
 
             if (appConfig.enableModalAutoclose) {
                 const sponsorDuration = (appConfig.modalAutocloseSeconds + 3) * 1000; 
                 floatingNumberTimeout = setTimeout(confirmAndAnnounce, sponsorDuration); 
+                
+                if (appConfig.showSponsorCountdown) {
+                    const wrapper = document.getElementById('sponsor-countdown-wrapper');
+                    const textEl = document.getElementById('sponsor-countdown-text');
+                    const circleEl = document.getElementById('sponsor-countdown-circle');
+                    
+                    if (wrapper && textEl && circleEl) {
+                        wrapper.classList.remove('hidden');
+                        let remaining = appConfig.modalAutocloseSeconds + 3;
+                        textEl.textContent = remaining.toString();
+                        
+                        const totalDash = 283; // 2 * PI * r (r=45)
+                        circleEl.style.strokeDashoffset = '0';
+                        
+                        let elapsedSteps = 0;
+                        const totalSteps = remaining;
+                        
+                        (window as any).sponsorCountdownInterval = setInterval(() => {
+                            remaining--;
+                            elapsedSteps++;
+                            if (remaining >= 0) {
+                                textEl.textContent = remaining.toString();
+                                const offset = (elapsedSteps / totalSteps) * totalDash;
+                                circleEl.style.strokeDashoffset = offset.toString();
+                            } else {
+                                clearInterval((window as any).sponsorCountdownInterval);
+                            }
+                        }, 1000);
+                    }
+                }
             }
         }
 
@@ -2964,21 +3594,12 @@ function applyAuctionZoom(scale: number) {
                 numberEl.textContent = `${letter}-${num}`;
                 DOMElements.lastNumbersDisplay.appendChild(numberEl);
             });
+            updateCurrentNumberDisplay();
             const lastCalledNumber = game.calledNumbers[game.calledNumbers.length - 1];
             if (lastCalledNumber) {
-                const letter = getLetterForNumber(lastCalledNumber);
-                const mainColor = appConfig.drawnTextColor;
-                const strokeColor = appConfig.drawnTextStrokeColor;
-                const strokeWidth = appConfig.drawnTextStrokeWidth;
-                (DOMElements.currentNumberEl as HTMLElement).style.color = mainColor;
-                (DOMElements.currentNumberEl as HTMLElement).style.webkitTextStroke = `${strokeWidth}px ${strokeColor}`;
-                DOMElements.currentNumberEl.innerHTML = `<span>${letter}</span><span>${lastCalledNumber}</span>`;
-                (DOMElements.currentNumberEl as HTMLElement).style.visibility = 'visible';
                 DOMElements.currentNumberEl.classList.remove('animate-bounce-in');
                 void (DOMElements.currentNumberEl as HTMLElement).offsetWidth; 
                 DOMElements.currentNumberEl.classList.add('animate-bounce-in');
-            } else {
-                (DOMElements.currentNumberEl as HTMLElement).style.visibility = 'hidden';
             }
             updateActiveRoundStats();
             const activeGameItem = DOMElements.gamesListEl.querySelector(`.game-item[data-game-number="${activeGameNumber}"]`);
@@ -3124,16 +3745,7 @@ function applyAuctionZoom(scale: number) {
                 const letter = getLetterForNumber(num);
                 updateLastNumbers(letter!, num, false);
             });
-            const lastNumber = game.calledNumbers[game.calledNumbers.length - 1];
-            if (lastNumber) {
-                const letter = getLetterForNumber(lastNumber);
-                const { drawnTextColor, drawnTextStrokeColor, drawnTextStrokeWidth } = appStore.state.appConfig;
-                (DOMElements.currentNumberEl as HTMLElement).style.color = drawnTextColor;
-                (DOMElements.currentNumberEl as HTMLElement).style.webkitTextStroke = `${drawnTextStrokeWidth}px ${drawnTextStrokeColor}`;
-
-                DOMElements.currentNumberEl.innerHTML = `<span>${letter}</span><span>${lastNumber}</span>`;
-                (DOMElements.currentNumberEl as HTMLElement).style.visibility = 'visible';
-            }
+            updateCurrentNumberDisplay();
             
             // Listen to Bingo Claims from online players
             if (appStore.state.appConfig.onlineSyncEnabled && eventId && gameNumber) {
@@ -3435,6 +4047,42 @@ function applyAuctionZoom(scale: number) {
                 }
             }
             return null;
+        }
+
+        function updateCurrentNumberDisplay() {
+            const { activeGameNumber, gamesData, appConfig } = appStore.state;
+            const currentNumberEl = DOMElements.currentNumberEl as HTMLElement;
+            if (!currentNumberEl) return;
+
+            if (!activeGameNumber || !gamesData[activeGameNumber]) {
+                currentNumberEl.style.visibility = 'hidden';
+                return;
+            }
+
+            const game = gamesData[activeGameNumber];
+            const lastCalledNumber = game.calledNumbers[game.calledNumbers.length - 1];
+
+            if (lastCalledNumber) {
+                const letter = getLetterForNumber(lastCalledNumber);
+                const roundColor = game.color;
+                const mainColor = appConfig.drawnTextColor;
+                const strokeColor = appConfig.drawnTextStrokeColor;
+                const strokeWidth = appConfig.drawnTextStrokeWidth;
+                const strokeStyle = `${strokeWidth}px ${strokeColor}`;
+
+                const isDarkTheme = document.documentElement.classList.contains('dark');
+                const defaultBg = isDarkTheme ? '#1e293b' : '#f1f5f9';
+                const bgColor = roundColor || (appConfig.boardColor !== 'default' ? appConfig.boardColor : defaultBg);
+
+                currentNumberEl.style.backgroundColor = bgColor;
+                currentNumberEl.style.color = mainColor;
+                currentNumberEl.style.webkitTextStroke = strokeStyle;
+                currentNumberEl.style.boxShadow = `0 0 40px 10px ${bgColor}`;
+                currentNumberEl.innerHTML = `<span>${letter}</span><span>${lastCalledNumber}</span>`;
+                currentNumberEl.style.visibility = 'visible';
+            } else {
+                currentNumberEl.style.visibility = 'hidden';
+            }
         }
 
         function showVerificationPanel() {
@@ -3789,7 +4437,7 @@ function applyAuctionZoom(scale: number) {
             
             const useSponsors = appConfig.enableSponsorsByNumber && allSponsors.length > 0;
             const rightColumnContent = useSponsors ? allSponsors : allWinners;
-            rightTitleEl.textContent = useSponsors ? "Nossos Patrocinadores" : "Vencedores";
+            rightTitleEl.textContent = useSponsors ? "Apoio" : "Vencedores";
 
             let leftIndex = 0;
             let rightIndex = 0;
@@ -3826,13 +4474,14 @@ function applyAuctionZoom(scale: number) {
                         
                         let innerHTML = '';
                         if (useSponsors) {
+                            rightTitleEl.textContent = item.name || "Apoio";
                             if (item.image) {
-                                innerHTML += `<div class="w-full flex-1 min-h-0 flex items-center justify-center mb-6"><img src="${item.image}" class="max-w-full max-h-full object-contain drop-shadow-2xl"></div>`;
-                            }
-                            if (item.name) {
-                                innerHTML += `<p class="text-5xl md:text-7xl text-center font-black text-amber-400 flex-shrink-0">${item.name}</p>`;
+                                innerHTML += `<div class="w-full flex-1 min-h-0 flex items-center justify-center p-2 md:p-6"><img src="${item.image}" class="max-w-full max-h-full object-contain drop-shadow-2xl ${isFullscreen ? 'transform scale-125' : ''} transition-transform duration-700"></div>`;
+                            } else {
+                                innerHTML += `<p class="text-6xl md:text-8xl text-center font-black text-amber-400 flex-shrink-0">${item.name || 'Patrocinador'}</p>`;
                             }
                         } else {
+                            rightTitleEl.textContent = "Vencedores";
                             if (item.name) {
                                 innerHTML += `<p class="text-5xl md:text-7xl text-center font-bold text-slate-100 mb-6">${item.name}</p>`;
                             }
@@ -3841,7 +4490,7 @@ function applyAuctionZoom(scale: number) {
                             }
                         }
                         
-                        rightContentEl.innerHTML = `<div class="flex flex-col items-center justify-center bg-black/40 rounded-xl p-8 w-full h-full border border-sky-900/40 shadow-xl overflow-hidden min-h-0">${innerHTML}</div>`;
+                        rightContentEl.innerHTML = `<div class="flex flex-col items-center justify-center bg-black/40 rounded-xl p-4 md:p-8 w-full h-full border border-sky-900/40 shadow-xl overflow-hidden min-h-0">${innerHTML}</div>`;
                         applyTransition(rightContentEl, 'in');
                         rightIndex++;
                     }, 500);
@@ -4230,6 +4879,7 @@ function showRoundEditModal(gameNumber: string) {
 
         
         async function generateAndPrintCards() {
+            try {
             const titleInput = document.getElementById('card-batch-title') as HTMLInputElement;
             const locationInput = document.getElementById('card-batch-location') as HTMLInputElement;
             const dateInput = document.getElementById('card-batch-date') as HTMLInputElement;
@@ -4243,13 +4893,56 @@ function showRoundEditModal(gameNumber: string) {
             const locationVal = (locationInput && locationInput.value.trim()) || "";
             const dateVal = (dateInput && dateInput.value.trim()) || "";
             const priceVal = (priceInput && priceInput.value.trim()) || "";
-            const quantity = parseInt(quantityInput.value, 10);
+            const quantityPages = parseInt(quantityInput.value, 10);
             const cardColor = colorInput ? colorInput.value : '#0ea5e9';
             const isLight = isLightColor(cardColor);
             const headerTextColor = isLight ? '#000000' : '#ffffff';
 
-            if (isNaN(quantity) || quantity <= 0 || quantity > 5000) {
-                showAlert("Por favor, insira uma quantidade válida entre 1 e 5000.");
+            const optTitle = (document.getElementById('card-opt-title') as HTMLInputElement)?.checked ?? true;
+            const optLocDate = (document.getElementById('card-opt-locdate') as HTMLInputElement)?.checked ?? true;
+            const optPrice = (document.getElementById('card-opt-price') as HTMLInputElement)?.checked ?? true;
+            const optPrizes = (document.getElementById('card-opt-prizes') as HTMLInputElement)?.checked ?? true;
+            const optQR = (document.getElementById('card-opt-qr') as HTMLInputElement)?.checked ?? true;
+            const optCode = (document.getElementById('card-opt-code') as HTMLInputElement)?.checked ?? true;
+            const saveTemplate = (document.getElementById('card-save-template') as HTMLInputElement)?.checked ?? false;
+            const downloadBackup = (document.getElementById('card-download-backup') as HTMLInputElement)?.checked ?? true;
+            const layoutSelect = (document.getElementById('card-cards-per-page') as HTMLSelectElement)?.value || '6';
+
+            let cpp = 6;
+            const numGames = Object.keys(appStore.state.gamesData).length;
+            if (layoutSelect === 'auto') {
+                if (numGames <= 1) cpp = 6;
+                else if (numGames === 2) cpp = 2;
+                else if (numGames === 3 || numGames === 4) cpp = 4;
+                else if (numGames === 5 || numGames === 6) cpp = 6;
+                else cpp = 8;
+            } else {
+                cpp = parseInt(layoutSelect, 10);
+            }
+            
+            const quantity = quantityPages * cpp;
+
+            if (saveTemplate) {
+                 appStore.state.appConfig.cardGeneratorConfig = {
+                      title,
+                      location: locationVal,
+                      date: dateVal,
+                      price: priceVal,
+                      quantity: quantityPages,
+                      color: cardColor,
+                      cardsPerPage: layoutSelect,
+                      showTitle: optTitle,
+                      showLocationDate: optLocDate,
+                      showPrice: optPrice,
+                      showPrizes: optPrizes,
+                      showQRCode: optQR,
+                      showVerificationCode: optCode
+                 };
+                 appStore.debouncedSave();
+            }
+
+            if (isNaN(quantityPages) || quantityPages <= 0 || quantityPages > 5000) {
+                showAlert("Por favor, insira uma quantidade de folhas válida entre 1 e 5000.");
                 return;
             }
 
@@ -4258,9 +4951,6 @@ function showRoundEditModal(gameNumber: string) {
                 printBtn.innerHTML = "Gerando... Aguarde";
                 printBtn.disabled = true;
             }
-
-            // small delay to allow UI to update
-            await new Promise(res => setTimeout(res, 100));
 
             const printWindow = window.open('', '_blank');
             if (!printWindow) {
@@ -4274,6 +4964,9 @@ function showRoundEditModal(gameNumber: string) {
             
             printWindow.document.write('<html><head><title>Preparando...</title></head><body style="font-family: sans-serif; text-align: center; padding: 50px;"><h2>Gerando ' + quantity + ' cartelas...</h2></body></html>');
             showAlert("Preparando PDF na nova aba. Aguarde...");
+
+            // small delay to allow UI to update
+            await new Promise(res => setTimeout(res, 100));
 
             // Generating raw data
             const resetSeriesInput = document.getElementById('card-reset-series') as HTMLInputElement | null;
@@ -4305,13 +4998,27 @@ function showRoundEditModal(gameNumber: string) {
             const startSeries = resetSeries ? 1 : Object.keys(appStore.state.cardsData).length + 1;
             const newCardsBatch: Record<string, any> = {};
             const uuids = [];
+            
+            // Optimize code generation to prevent UI freeze
+            const usedCodes = new Set<string>();
+            for (const c of Object.values(appStore.state.cardsData)) {
+                if (c && c.code) usedCodes.add(c.code);
+            }
+            
             for (let i = 0; i < quantity; i++) {
                 const uuid = generateUUID();
                 uuids.push(uuid);
                 const numbers = generateSingleBingoCardNumbers();
+                let code = '';
+                do {
+                    code = Math.random().toString(36).substring(2, 6).toUpperCase();
+                } while (usedCodes.has(code));
+                usedCodes.add(code);
+                
                 const cardData = {
                     series: startSeries + i,
-                    numbers: numbers
+                    numbers: numbers,
+                    code: code
                 };
                 appStore.state.cardsData[uuid] = cardData;
                 newCardsBatch[uuid] = cardData;
@@ -4376,10 +5083,21 @@ function showRoundEditModal(gameNumber: string) {
 
             const logoData = appStore.state.appConfig.customLogoBase64 || '';
             const useLogo = !!logoData;
+            
+            let gridClasses = "grid-cols-2 grid-rows-3";
+            if (cpp === 1) gridClasses = "grid-cols-1 grid-rows-1";
+            else if (cpp === 2) gridClasses = "grid-cols-1 grid-rows-2";
+            else if (cpp === 4) gridClasses = "grid-cols-2 grid-rows-2";
+            else if (cpp === 6) gridClasses = "grid-cols-2 grid-rows-3";
+            else if (cpp === 8) gridClasses = "grid-cols-2 grid-rows-4";
 
-            // Split into pages of 6
-            for (let i = 0; i < uuids.length; i += 6) {
-                const batch = uuids.slice(i, i + 6);
+            // Split into pages
+            let fullPagesHTML = "";
+            let generatedPages = 0;
+            const totalPages = Math.ceil(uuids.length / cpp);
+            
+            for (let i = 0; i < uuids.length; i += cpp) {
+                const batch = uuids.slice(i, i + cpp);
                 const firstSeriesOfFolha = appStore.state.cardsData[batch[0]].series;
                 const folhaNumber = Math.floor((firstSeriesOfFolha - 1) / 6) + 1;
 
@@ -4451,15 +5169,22 @@ function showRoundEditModal(gameNumber: string) {
                         
                                 <!-- Info Column (Right side) -->
                                 <div class="w-[28%] flex flex-col items-center bg-white p-[2px] justify-between flex-shrink-0 min-h-0">
+                                    ${optQR ? `
                                     <div class="text-[7px] font-bold leading-tight uppercase mb-[1px] text-center px-1">Escaneie para<br>jogar</div>
                                     <img src="${qrDataUrl}" alt="QR" class="w-20 h-20 border-[2px] border-black object-contain bg-white" />
-                                    <div class="text-[4px] text-gray-500 uppercase tracking-widest break-all font-mono mb-[2px]">ID: ${uuid.substring(0,8)}</div>
+                                    ` : ''}
+                                    
+                                    ${optCode ? `
+                                    <div class="text-[6px] text-gray-700 uppercase font-black tracking-widest break-all font-mono mt-1 text-center leading-none" style="margin-top: 4px;">CÓD: ${cardData.code}</div>
+                                    ` : ''}
                                     
                                     <!-- Premiações abaixo do QR Code -->
-                                    <div class="flex-grow w-full border-t-[2px] border-black pt-0.5 px-0 flex flex-col gap-[1px] mt-auto bg-gray-50 overflow-hidden">
+                                    ${optPrizes ? `
+                                    <div class="flex-grow w-full border-t-[2px] border-black pt-0.5 px-0 flex flex-col gap-[1px] mt-auto bg-gray-50 overflow-hidden" style="margin-top: 4px;">
                                         <div class="text-[5px] font-black uppercase text-center w-full leading-tight bg-gray-200 border border-black py-[1px]">Premiações</div>
                                         ${gridSideText}
                                     </div>
+                                    ` : ''}
                                 </div>
                             </div>
                         </div>
@@ -4468,16 +5193,20 @@ function showRoundEditModal(gameNumber: string) {
 
                 const resolvedBatchHTML = await Promise.all(batchPromises);
                 
-                printWindow.document.write(`
+                fullPagesHTML += `
                     <div class="bg-white border-[4px] border-black flex flex-col w-full h-[287mm] max-w-[210mm] mx-auto p-1 box-border print:p-0" style="page-break-after: always; overflow: hidden;">
                         <!-- MASTER HEADER -->
                         <div class="border-[2px] border-black mb-1 flex flex-col flex-shrink-0">
+                            ${optTitle ? `
                             <h1 class="text-center font-black text-3xl uppercase py-1.5 m-0 leading-none tracking-widest" style="background-color: ${cardColor}; color: ${headerTextColor};">
                                 ${title}
                             </h1>
+                            ` : ''}
                             <div class="flex border-t-[2px] border-black text-[9px] font-bold uppercase divide-x-[2px] divide-black">
+                                ${optLocDate ? `
                                 <div class="flex-1 px-1 py-1 flex items-center">ONDE:&nbsp;<span class="font-normal border-b border-black flex-grow ml-1 min-w-[20px] truncate">${locationVal}</span></div>
                                 <div class="w-32 px-1 py-1 flex items-center">DATA:&nbsp;<span class="font-normal border-b border-black flex-grow ml-1 min-w-[20px] truncate">${dateVal}</span></div>
+                                ` : '<div class="flex-1 bg-white"></div>'}
                                 <div class="w-[85px] bg-gray-200 flex flex-col items-center justify-center leading-none p-[2px]">
                                     <span class="text-[7px]">CARTELA Nº</span>
                                     <span class="text-sm font-black">${String(folhaNumber).padStart(5, '0')}</span>
@@ -4486,15 +5215,20 @@ function showRoundEditModal(gameNumber: string) {
                         </div>
                     
                         <!-- MAIN GRIDS -->
-                        <div class="flex-grow grid grid-cols-2 grid-rows-3 gap-1 pb-1 relative min-h-0">
+                        <div class="flex-grow grid ${gridClasses} gap-1 pb-1 relative min-h-0">
                              ${resolvedBatchHTML.join('')}
                         </div>
                         
                         <!-- MASTER BOTTOM STUB -->
                         <div class="border-[2px] border-black mt-auto flex flex-col uppercase text-[9px] font-bold leading-none flex-shrink-0 bg-white">
                             <div class="flex border-b-[2px] border-black divide-x-[2px] divide-black bg-gray-100">
+                                 ${optTitle ? `
                                  <div class="flex-1 px-2 py-1 flex items-center justify-center"><span class="font-black text-sm tracking-widest truncate max-w-[250px]">${title}</span></div>
+                                 ` : '<div class="flex-1 bg-gray-100"></div>'}
+                                 
+                                 ${optPrice ? `
                                  <div class="w-28 px-2 py-1 flex items-center">VALOR:&nbsp;<span class="font-black text-xs ml-auto min-w-[20px]">${priceVal}</span></div>
+                                 ` : ''}
                                  <div class="w-[85px] bg-gray-300 flex flex-col items-center justify-center py-0.5">
                                       <span class="text-[6px]">CARTELA Nº</span>
                                       <span class="text-sm font-black leading-none">${String(folhaNumber).padStart(5, '0')}</span>
@@ -4513,10 +5247,21 @@ function showRoundEditModal(gameNumber: string) {
                             </div>
                         </div>
                     </div>
-                `);
+                `;
 
-                if (uuids.length > 200) await new Promise(res => setTimeout(res, 5));
+                generatedPages++;
+                
+                // Allow UI thread to breathe more often
+                if (generatedPages % 5 === 0) {
+                    await new Promise(res => setTimeout(res, 1));
+                    if (printBtn) {
+                        printBtn.innerHTML = `Gerando... ${Math.round((generatedPages / totalPages) * 100)}%`;
+                    }
+                }
             }
+
+            // Write everything at once to prevent document reflow freezes
+            printWindow.document.write(fullPagesHTML);
 
             printWindow.document.write(`
                         </div>
@@ -4531,31 +5276,54 @@ function showRoundEditModal(gameNumber: string) {
             `);
             printWindow.document.close();
             
+            if (downloadBackup) {
+                try {
+                    const htmlContent = "<!DOCTYPE html>\n" + printWindow.document.documentElement.outerHTML;
+                    const blob = new Blob([htmlContent], { type: 'text/html' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `Cartelas_Bingo_${title.replace(/[^a-z0-9]/gi, '_')}.html`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                } catch(err) {
+                    console.error("Erro ao baixar backup:", err);
+                }
+            }
+            
+            if (printBtn) {
+                printBtn.innerHTML = "Gerar e Imprimir";
+                printBtn.disabled = false;
+            }
+            
             // Auto close modal
             DOMElements.cardGeneratorModal.classList.add('hidden');
+            } catch (err: any) {
+                console.error("Generator Error:", err);
+                showAlert("Erro ao gerar cartelas: " + (err.message || err.toString()));
+                const printBtn = document.getElementById('generate-and-print-cards-btn') as HTMLButtonElement | null;
+                if (printBtn) {
+                    printBtn.innerHTML = "Gerar e Imprimir";
+                    printBtn.disabled = false;
+                }
+            }
         }
 
         function showCardGeneratorModal() {
+             const pin = appStore.state.appConfig.cardGeneratorPin;
+             if (pin) {
+                 const entered = prompt("Digite a senha de 4 dígitos para acessar o Gerador de Cartelas:");
+                 if (entered !== pin) {
+                     showAlert("Senha incorreta!");
+                     return;
+                 }
+             }
+
              if (appStore.state.appConfig.enableSoundEffects) sounds.playClick();
              DOMElements.cardGeneratorModal.innerHTML = getModalTemplates().cardGenerator;
              DOMElements.cardGeneratorModal.classList.remove('hidden');
 
-             const colorInput = document.getElementById('card-color') as HTMLInputElement;
-             const { activeGameNumber, gamesData, appConfig } = appStore.state;
-             if (colorInput) {
-                 if (activeGameNumber && gamesData[activeGameNumber]?.color) {
-                     colorInput.value = gamesData[activeGameNumber].color;
-                 } else if (appConfig.boardColor && appConfig.boardColor !== 'default') {
-                     colorInput.value = appConfig.boardColor;
-                 } else {
-                     colorInput.value = '#0ea5e9'; // fallback sky-500
-                 }
-             }
 
-             document.getElementById('generate-and-print-cards-btn')!.addEventListener('click', generateAndPrintCards);
-             document.getElementById('close-card-generator-btn')!.addEventListener('click', () => {
-                 DOMElements.cardGeneratorModal.classList.add('hidden');
-             });
         }
 
         let scannerStream: MediaStream | null = null;
@@ -4592,8 +5360,9 @@ function showRoundEditModal(gameNumber: string) {
                 
                 // Procurar nas cartelas pelo numero curto (series)
                 let foundUuid = "";
+                const searchUpper = searchId.toUpperCase();
                 for (const [uuid, card] of Object.entries(appStore.state.cardsData)) {
-                    if (card.series.toString() === searchId) {
+                    if (card.series.toString() === searchId || (card.code && card.code === searchUpper) || uuid.startsWith(searchId) || uuid.toUpperCase().startsWith(searchUpper)) {
                         foundUuid = uuid;
                         break;
                     }
@@ -4850,7 +5619,7 @@ function showRoundEditModal(gameNumber: string) {
                 DOMElements.resetConfirmModal.innerHTML = getModalTemplates().resetConfirm;
                 DOMElements.resetConfirmModal.classList.remove('hidden');
                 document.getElementById('confirm-reset-btn')!.onclick = async () => {
-                    localStorage.removeItem(LOCAL_STORAGE_KEY);
+                    safeLocalStorage.removeItem(LOCAL_STORAGE_KEY);
                     await clearAllSponsorImages();
                     await clearCardsDB();
                     window.location.reload();
@@ -5583,7 +6352,7 @@ function showRoundEditModal(gameNumber: string) {
                      globalStatusEl.classList.remove('hidden');
                      if (eventId) {
                          globalStatusEl.className = 'flex items-center justify-center p-2 rounded-full shadow-lg bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-sm font-bold font-mono text-center px-6 border-2 border-green-400 dark:border-green-600';
-                         globalStatusEl.innerHTML = `✅ Nuvem Ativa (ID: ${eventId})`;
+                         globalStatusEl.innerHTML = `<div class=\"cursor-pointer select-none flex items-center\" onclick=\"const idEl = document.getElementById('event-id-display'); if(idEl) idEl.classList.toggle('hidden');\">✅ Modo Online <span id=\"event-id-display\" class=\"hidden text-xs ml-2 opacity-80 font-normal\">ID: ${eventId}</span></div>`;
                      } else {
                          globalStatusEl.className = 'flex items-center justify-center p-2 rounded-full shadow-lg bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 text-sm font-bold font-mono text-center px-6 border-2 border-yellow-400 dark:border-yellow-600';
                          globalStatusEl.innerHTML = `⏳ Conectando à Nuvem...`;
