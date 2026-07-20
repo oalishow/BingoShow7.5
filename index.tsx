@@ -44,14 +44,7 @@ let eventId = '';
                     "Espetinho - R$ 8,00", "Pastel - R$ 6,00", "Porção de Fritas - R$ 15,00"
                 ],
                 drawnPrizeNumbers: [] as number[],
-                versionHistory: `**v7.6.0 (Atual)**
-- **MODO CLARO OTIMIZADO:** Melhoria na legibilidade dos patrocinadores e cardápio durante o modo claro no painel de intervalo.
-- **SEGURANÇA:** Inclusão de senha opcional de 4 dígitos para proteger o Gerador de Cartelas.
-- **LAYOUT DE IMPRESSÃO:** Novas opções automáticas e manuais para impressão de cartelas em PDF.
-- **CÓDIGO DE CARTELAS:** Código de verificação (CÓD) reduzido para 4 caracteres visando facilitar a checagem manual.
-- **BACKUP:** Download automático de cartelas geradas via HTML para evitar perda.
-
-**v7.3.0**
+                versionHistory: `**v7.3.0 (Atual)**
 - **NOVO LOGOTIPO:** Atualização do logotipo principal para um design mais colorido e moderno com gradientes e efeito 3D.
 - **DESIGN DO PAINEL:** Reformulação completa do painel de rodada ativa para o Modo Claro, utilizando bordas suaves, sombras e fundo branco para maior contraste e profissionalismo.
 - **LEGIBILIDADE DE PRÊMIOS:** Aumento significativo no tamanho da fonte dos prêmios e aplicação de contorno preto (text-stroke) nos valores, garantindo visibilidade máxima em projetores e ambientes iluminados.
@@ -126,7 +119,6 @@ let eventId = '';
                     showMenuInBreak: true,
                     sponsorEditorReusableBg: '',
                     sponsorEditorReusableBgOpacity: 100,
-                    cardGeneratorPin: '',
                     cardGeneratorConfig: {
                         title: '',
                         location: '',
@@ -395,16 +387,6 @@ let eventId = '';
                 this.state.menuItems = state.menuItems || [ "Refrigerante - R$ 5,00", "Cerveja - R$ 7,00", "Água - R$ 3,00", "Espetinho - R$ 8,00", "Pastel - R$ 6,00", "Porção de Fritas - R$ 15,00" ];
                 this.state.drawnPrizeNumbers = state.drawnPrizeNumbers || [];
                 this.state.versionHistory = state.versionHistory || this.state.versionHistory;
-                if (!this.state.versionHistory.includes('v7.6')) {
-                    this.state.versionHistory = `**v7.6.0 (Atual)**
-- **MODO CLARO OTIMIZADO:** Melhoria na legibilidade dos patrocinadores e cardápio durante o modo claro no painel de intervalo.
-- **SEGURANÇA:** Inclusão de senha opcional de 4 dígitos para proteger o Gerador de Cartelas.
-- **LAYOUT DE IMPRESSÃO:** Novas opções automáticas e manuais para impressão de cartelas em PDF.
-- **CÓDIGO DE CARTELAS:** Código de verificação (CÓD) reduzido para 4 caracteres visando facilitar a checagem manual.
-- **BACKUP:** Download automático de cartelas geradas via HTML para evitar perda.
-
-` + this.state.versionHistory.replace('(Atual)', '');
-                }
                 const loadedConfig = state.appConfig || {};
                 
                 // Migração: Se existir customLogo mas não customLogoBase64, promove para o novo campo
@@ -567,7 +549,7 @@ let eventId = '';
         let winnerDisplayTimeout: any; 
 
         // --- Constants ---
-        const currentVersion = "7.6"; // Otimizações
+        const currentVersion = "7.5"; // Foco 100% Local
         const buildInfo = "Build: 01/07/2026 - 12:24"; // Data e hora em formato DD/MM/AAAA 
         const DYNAMIC_LETTERS = ['B', 'I', 'N', 'G', 'O'];
         const DYNAMIC_LETTERS_AJUDE = ['A', 'J', 'U', 'D', 'E'];
@@ -964,17 +946,17 @@ function populateSettingsShortcutsTab() {
                 congrats: `<div class="modal-content bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-2xl w-full text-center"><h2 class="text-5xl font-black text-yellow-400">${appLabels.congratsModalTitle}</h2><div id="congrats-winner-name" contenteditable="true" class="text-4xl font-bold text-gray-900 dark:text-white my-4 focus:outline-none focus:ring-2 ring-amber-500 rounded-lg px-2"></div><div id="congrats-prize-value" contenteditable="true" class="text-2xl text-slate-700 dark:text-slate-300 mb-6 focus:outline-none focus:ring-2 ring-amber-500 rounded-lg px-2"></div><p class="text-2xl text-sky-300 mt-4">${appLabels.congratsModalMessage}</p><button id="close-congrats-modal-btn" class="mt-8 bg-slate-600 hover:bg-slate-700 text-white font-bold py-3 px-8 rounded-full text-lg">${appLabels.congratsModalCloseButton}</button></div>`,
                 eventBreak: `<div class="modal-content bg-white dark:bg-gray-800/90 backdrop-blur-sm p-8 rounded-2xl shadow-2xl w-full h-full text-center flex flex-col justify-between">
                                 <header class="flex-shrink-0">
-                                    <h2 id="event-break-title" class="text-6xl font-black text-sky-600 dark:text-sky-400">${appLabels.intervalModalTitle}</h2>
+                                    <h2 id="event-break-title" class="text-6xl font-black text-sky-400">${appLabels.intervalModalTitle}</h2>
                                 </header>
                                 <main class="flex-grow my-8 grid grid-cols-1 md:grid-cols-2 gap-8 overflow-hidden relative z-10 min-h-0">
-                                    <div id="break-left-column" class="flex flex-col items-center bg-gray-100 dark:bg-black/20 p-6 rounded-xl border border-gray-200 dark:border-transparent h-full overflow-hidden min-h-0">
-                                        <h3 id="break-left-title" class="text-5xl font-bold text-amber-600 dark:text-amber-400 mb-6 flex-shrink-0">Cardápio</h3>
+                                    <div id="break-left-column" class="flex flex-col items-center bg-black/20 p-6 rounded-xl h-full overflow-hidden min-h-0">
+                                        <h3 id="break-left-title" class="text-5xl font-bold text-amber-400 mb-6 flex-shrink-0">Cardápio</h3>
                                         <div id="break-left-content" class="flex-grow w-full h-full flex items-center justify-center text-7xl font-black text-gray-900 dark:text-white text-center transition-opacity duration-500 opacity-0 min-h-0"></div>
                                     </div>
-                                    <div id="break-right-column" class="flex flex-col items-center bg-gray-100 dark:bg-black/20 p-6 rounded-xl border border-gray-200 dark:border-transparent h-full overflow-hidden relative min-h-0">
+                                    <div id="break-right-column" class="flex flex-col items-center bg-black/20 p-6 rounded-xl h-full overflow-hidden relative min-h-0">
                                         <div class="flex items-center justify-between w-full mb-6 flex-shrink-0">
                                             <div class="w-12"></div>
-                                            <h3 id="break-right-title" class="text-5xl font-bold text-amber-600 dark:text-amber-400">Apoio</h3>
+                                            <h3 id="break-right-title" class="text-5xl font-bold text-amber-400">Apoio</h3>
                                             <button id="toggle-sponsors-fullscreen-btn" class="w-12 h-12 bg-slate-700 hover:bg-slate-600 rounded-full flex items-center justify-center text-white cursor-pointer z-20 transition-colors" title="Tela Cheia">
                                                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
@@ -1118,13 +1100,6 @@ function populateSettingsShortcutsTab() {
                                     <label for="theme-toggle" class="text-slate-800 dark:text-slate-200 font-medium">Modo Escuro (Desmarque para Modo Claro)</label>
                                 </div>
                             </div>
-                            <div class="border-b border-gray-700 pb-6 mt-6">
-                                <h3 class="text-xl font-bold text-slate-700 dark:text-slate-300 mb-2">Segurança (Área Restrita)</h3>
-                                <p class="text-sm text-slate-600 dark:text-slate-400 mb-2">Configure uma senha para proteger o acesso ao Gerador de Cartelas e impedir edições indesejadas.</p>
-                                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Senha (PIN de 4 dígitos):</label>
-                                <input type="password" id="card-generator-pin-input" maxlength="4" placeholder="Ex: 1234 (Deixe vazio para desativar)" class="w-full md:w-1/2 p-3 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-sky-500 focus:border-sky-500 font-black tracking-widest">
-                            </div>
-                            
                             <div class="border-b border-gray-700 pb-6">
                                 <label class="block text-xl font-bold text-slate-700 dark:text-slate-300 mb-2">${appLabels.settingsBingoTitleLabel}</label>
                                 <p class="text-xs text-slate-600 dark:text-slate-400 mb-4">${appLabels.settingsBingoTitleDescription}</p>
@@ -1415,41 +1390,29 @@ function populateSettingsShortcutsTab() {
                                             <h3 class="font-bold text-gray-700 dark:text-gray-300 text-sm uppercase tracking-wider mb-2">Visibilidade na Cartela</h3>
                                             <div class="grid grid-cols-2 gap-3">
                                                 <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
-                                                    <input type="checkbox" id="card-opt-title" checked class="w-4 h-4 rounded text-sky-600 focus:ring-sky-500"> Mostrar Título
+                                                    <input type="checkbox" id="card-opt-title" class="w-4 h-4 rounded text-sky-600 focus:ring-sky-500"> Mostrar Título
                                                 </label>
                                                 <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
-                                                    <input type="checkbox" id="card-opt-locdate" checked class="w-4 h-4 rounded text-sky-600 focus:ring-sky-500"> Mostrar Local/Data
+                                                    <input type="checkbox" id="card-opt-locdate" class="w-4 h-4 rounded text-sky-600 focus:ring-sky-500"> Mostrar Local/Data
                                                 </label>
                                                 <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
-                                                    <input type="checkbox" id="card-opt-price" checked class="w-4 h-4 rounded text-sky-600 focus:ring-sky-500"> Mostrar Preço
+                                                    <input type="checkbox" id="card-opt-price" class="w-4 h-4 rounded text-sky-600 focus:ring-sky-500"> Mostrar Preço
                                                 </label>
                                                 <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
-                                                    <input type="checkbox" id="card-opt-prizes" checked class="w-4 h-4 rounded text-sky-600 focus:ring-sky-500"> Mostrar Prêmios
+                                                    <input type="checkbox" id="card-opt-prizes" class="w-4 h-4 rounded text-sky-600 focus:ring-sky-500"> Mostrar Prêmios
                                                 </label>
                                                 <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
-                                                    <input type="checkbox" id="card-opt-qr" checked class="w-4 h-4 rounded text-sky-600 focus:ring-sky-500"> Mostrar QR Code
+                                                    <input type="checkbox" id="card-opt-qr" class="w-4 h-4 rounded text-sky-600 focus:ring-sky-500"> Mostrar QR Code
                                                 </label>
                                                 <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
-                                                    <input type="checkbox" id="card-opt-code" checked class="w-4 h-4 rounded text-sky-600 focus:ring-sky-500"> Mostrar ID p/ Check
+                                                    <input type="checkbox" id="card-opt-code" class="w-4 h-4 rounded text-sky-600 focus:ring-sky-500"> Mostrar ID p/ Check
                                                 </label>
                                             </div>
                                        </div>
 
                                        <div class="flex items-center justify-between gap-2 mt-2">
-                                            <div class="flex-1 text-left text-sm font-bold text-slate-500 dark:text-slate-400">Quantidade de Folhas:</div>
-                                            <input type="number" id="card-quantity" placeholder="Ex: 20 folhas" value="20" class="w-32 text-center text-lg font-bold p-3 border-2 border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
-                                       </div>
-                                       
-                                       <div class="flex items-center justify-between gap-2">
-                                            <div class="flex-1 text-left text-sm font-bold text-slate-500 dark:text-slate-400">Layout de Impressão:</div>
-                                            <select id="card-cards-per-page" class="w-48 text-center text-sm font-bold p-3 border-2 border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
-                                                <option value="auto">Automático</option>
-                                                <option value="1">1 por Folha</option>
-                                                <option value="2">2 por Folha</option>
-                                                <option value="4">4 por Folha</option>
-                                                <option value="6">6 por Folha (Padrão)</option>
-                                                <option value="8">8 por Folha</option>
-                                            </select>
+                                            <div class="flex-1 text-left text-sm font-bold text-slate-500 dark:text-slate-400">Total de Grades:</div>
+                                            <input type="number" id="card-quantity" placeholder="Ex: 120 (rendem 20 folhas)" value="120" class="w-48 text-center text-lg font-bold p-3 border-2 border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
                                        </div>
                                        <div class="flex items-center justify-between border-2 border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 p-3 rounded-lg">
                                            <label class="text-slate-700 dark:text-slate-300 font-bold" for="card-color">Cor das Cartelas:</label>
@@ -1462,10 +1425,6 @@ function populateSettingsShortcutsTab() {
                                        <div class="flex items-center gap-2 border-2 border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 p-3 rounded-lg">
                                            <input type="checkbox" id="card-save-template" class="w-5 h-5 rounded cursor-pointer focus:ring-2 focus:ring-sky-500 accent-sky-600 border-gray-300">
                                            <label class="text-slate-700 dark:text-slate-300 font-bold cursor-pointer flex-1" for="card-save-template">Salvar estas configurações como padrão</label>
-                                       </div>
-                                       <div class="flex items-center gap-2 border-2 border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 p-3 rounded-lg">
-                                           <input type="checkbox" id="card-download-backup" checked class="w-5 h-5 rounded cursor-pointer focus:ring-2 focus:ring-sky-500 accent-sky-600 border-gray-300">
-                                           <label class="text-slate-700 dark:text-slate-300 font-bold cursor-pointer flex-1" for="card-download-backup">Baixar backup das cartelas (Arquivo HTML)</label>
                                        </div>
                                    </div>
                                    <div class="flex justify-center gap-4 mb-4">
@@ -1786,7 +1745,7 @@ function showFinalWinnersModal() {
                     content += `<div class="w-full flex-1 min-h-0 flex items-center justify-center mb-4"><img src="${s.image}" alt="${s.name || 'Patrocinador'}" class="max-w-full max-h-full object-contain drop-shadow-2xl"></div>`;
                 }
                 if (s.name) {
-                    content += `<span class="text-4xl md:text-5xl font-bold text-amber-600 dark:text-amber-400 flex-shrink-0">${s.name}</span>`;
+                    content += `<span class="text-4xl md:text-5xl font-bold text-amber-400 flex-shrink-0">${s.name}</span>`;
                 }
                 sponsorsList.innerHTML = `<div class="flex flex-col items-center justify-center w-full h-full min-h-0">${content}</div>`;
                 applyTransition(sponsorsList, 'in');
@@ -4879,7 +4838,6 @@ function showRoundEditModal(gameNumber: string) {
 
         
         async function generateAndPrintCards() {
-            try {
             const titleInput = document.getElementById('card-batch-title') as HTMLInputElement;
             const locationInput = document.getElementById('card-batch-location') as HTMLInputElement;
             const dateInput = document.getElementById('card-batch-date') as HTMLInputElement;
@@ -4893,7 +4851,7 @@ function showRoundEditModal(gameNumber: string) {
             const locationVal = (locationInput && locationInput.value.trim()) || "";
             const dateVal = (dateInput && dateInput.value.trim()) || "";
             const priceVal = (priceInput && priceInput.value.trim()) || "";
-            const quantityPages = parseInt(quantityInput.value, 10);
+            const quantity = parseInt(quantityInput.value, 10);
             const cardColor = colorInput ? colorInput.value : '#0ea5e9';
             const isLight = isLightColor(cardColor);
             const headerTextColor = isLight ? '#000000' : '#ffffff';
@@ -4905,22 +4863,6 @@ function showRoundEditModal(gameNumber: string) {
             const optQR = (document.getElementById('card-opt-qr') as HTMLInputElement)?.checked ?? true;
             const optCode = (document.getElementById('card-opt-code') as HTMLInputElement)?.checked ?? true;
             const saveTemplate = (document.getElementById('card-save-template') as HTMLInputElement)?.checked ?? false;
-            const downloadBackup = (document.getElementById('card-download-backup') as HTMLInputElement)?.checked ?? true;
-            const layoutSelect = (document.getElementById('card-cards-per-page') as HTMLSelectElement)?.value || '6';
-
-            let cpp = 6;
-            const numGames = Object.keys(appStore.state.gamesData).length;
-            if (layoutSelect === 'auto') {
-                if (numGames <= 1) cpp = 6;
-                else if (numGames === 2) cpp = 2;
-                else if (numGames === 3 || numGames === 4) cpp = 4;
-                else if (numGames === 5 || numGames === 6) cpp = 6;
-                else cpp = 8;
-            } else {
-                cpp = parseInt(layoutSelect, 10);
-            }
-            
-            const quantity = quantityPages * cpp;
 
             if (saveTemplate) {
                  appStore.state.appConfig.cardGeneratorConfig = {
@@ -4928,9 +4870,8 @@ function showRoundEditModal(gameNumber: string) {
                       location: locationVal,
                       date: dateVal,
                       price: priceVal,
-                      quantity: quantityPages,
+                      quantity,
                       color: cardColor,
-                      cardsPerPage: layoutSelect,
                       showTitle: optTitle,
                       showLocationDate: optLocDate,
                       showPrice: optPrice,
@@ -4941,8 +4882,8 @@ function showRoundEditModal(gameNumber: string) {
                  appStore.debouncedSave();
             }
 
-            if (isNaN(quantityPages) || quantityPages <= 0 || quantityPages > 5000) {
-                showAlert("Por favor, insira uma quantidade de folhas válida entre 1 e 5000.");
+            if (isNaN(quantity) || quantity <= 0 || quantity > 5000) {
+                showAlert("Por favor, insira uma quantidade válida entre 1 e 5000.");
                 return;
             }
 
@@ -4951,6 +4892,9 @@ function showRoundEditModal(gameNumber: string) {
                 printBtn.innerHTML = "Gerando... Aguarde";
                 printBtn.disabled = true;
             }
+
+            // small delay to allow UI to update
+            await new Promise(res => setTimeout(res, 100));
 
             const printWindow = window.open('', '_blank');
             if (!printWindow) {
@@ -4964,9 +4908,6 @@ function showRoundEditModal(gameNumber: string) {
             
             printWindow.document.write('<html><head><title>Preparando...</title></head><body style="font-family: sans-serif; text-align: center; padding: 50px;"><h2>Gerando ' + quantity + ' cartelas...</h2></body></html>');
             showAlert("Preparando PDF na nova aba. Aguarde...");
-
-            // small delay to allow UI to update
-            await new Promise(res => setTimeout(res, 100));
 
             // Generating raw data
             const resetSeriesInput = document.getElementById('card-reset-series') as HTMLInputElement | null;
@@ -4998,27 +4939,13 @@ function showRoundEditModal(gameNumber: string) {
             const startSeries = resetSeries ? 1 : Object.keys(appStore.state.cardsData).length + 1;
             const newCardsBatch: Record<string, any> = {};
             const uuids = [];
-            
-            // Optimize code generation to prevent UI freeze
-            const usedCodes = new Set<string>();
-            for (const c of Object.values(appStore.state.cardsData)) {
-                if (c && c.code) usedCodes.add(c.code);
-            }
-            
             for (let i = 0; i < quantity; i++) {
                 const uuid = generateUUID();
                 uuids.push(uuid);
                 const numbers = generateSingleBingoCardNumbers();
-                let code = '';
-                do {
-                    code = Math.random().toString(36).substring(2, 6).toUpperCase();
-                } while (usedCodes.has(code));
-                usedCodes.add(code);
-                
                 const cardData = {
                     series: startSeries + i,
-                    numbers: numbers,
-                    code: code
+                    numbers: numbers
                 };
                 appStore.state.cardsData[uuid] = cardData;
                 newCardsBatch[uuid] = cardData;
@@ -5083,21 +5010,10 @@ function showRoundEditModal(gameNumber: string) {
 
             const logoData = appStore.state.appConfig.customLogoBase64 || '';
             const useLogo = !!logoData;
-            
-            let gridClasses = "grid-cols-2 grid-rows-3";
-            if (cpp === 1) gridClasses = "grid-cols-1 grid-rows-1";
-            else if (cpp === 2) gridClasses = "grid-cols-1 grid-rows-2";
-            else if (cpp === 4) gridClasses = "grid-cols-2 grid-rows-2";
-            else if (cpp === 6) gridClasses = "grid-cols-2 grid-rows-3";
-            else if (cpp === 8) gridClasses = "grid-cols-2 grid-rows-4";
 
-            // Split into pages
-            let fullPagesHTML = "";
-            let generatedPages = 0;
-            const totalPages = Math.ceil(uuids.length / cpp);
-            
-            for (let i = 0; i < uuids.length; i += cpp) {
-                const batch = uuids.slice(i, i + cpp);
+            // Split into pages of 6
+            for (let i = 0; i < uuids.length; i += 6) {
+                const batch = uuids.slice(i, i + 6);
                 const firstSeriesOfFolha = appStore.state.cardsData[batch[0]].series;
                 const folhaNumber = Math.floor((firstSeriesOfFolha - 1) / 6) + 1;
 
@@ -5175,7 +5091,7 @@ function showRoundEditModal(gameNumber: string) {
                                     ` : ''}
                                     
                                     ${optCode ? `
-                                    <div class="text-[6px] text-gray-700 uppercase font-black tracking-widest break-all font-mono mt-1 text-center leading-none" style="margin-top: 4px;">CÓD: ${cardData.code}</div>
+                                    <div class="text-[6px] text-gray-700 uppercase font-black tracking-widest break-all font-mono mt-1 text-center leading-none" style="margin-top: 4px;">CÓD: ${uuid.substring(0,8)}</div>
                                     ` : ''}
                                     
                                     <!-- Premiações abaixo do QR Code -->
@@ -5193,7 +5109,7 @@ function showRoundEditModal(gameNumber: string) {
 
                 const resolvedBatchHTML = await Promise.all(batchPromises);
                 
-                fullPagesHTML += `
+                printWindow.document.write(`
                     <div class="bg-white border-[4px] border-black flex flex-col w-full h-[287mm] max-w-[210mm] mx-auto p-1 box-border print:p-0" style="page-break-after: always; overflow: hidden;">
                         <!-- MASTER HEADER -->
                         <div class="border-[2px] border-black mb-1 flex flex-col flex-shrink-0">
@@ -5215,7 +5131,7 @@ function showRoundEditModal(gameNumber: string) {
                         </div>
                     
                         <!-- MAIN GRIDS -->
-                        <div class="flex-grow grid ${gridClasses} gap-1 pb-1 relative min-h-0">
+                        <div class="flex-grow grid grid-cols-2 grid-rows-3 gap-1 pb-1 relative min-h-0">
                              ${resolvedBatchHTML.join('')}
                         </div>
                         
@@ -5247,21 +5163,10 @@ function showRoundEditModal(gameNumber: string) {
                             </div>
                         </div>
                     </div>
-                `;
+                `);
 
-                generatedPages++;
-                
-                // Allow UI thread to breathe more often
-                if (generatedPages % 5 === 0) {
-                    await new Promise(res => setTimeout(res, 1));
-                    if (printBtn) {
-                        printBtn.innerHTML = `Gerando... ${Math.round((generatedPages / totalPages) * 100)}%`;
-                    }
-                }
+                if (uuids.length > 200) await new Promise(res => setTimeout(res, 5));
             }
-
-            // Write everything at once to prevent document reflow freezes
-            printWindow.document.write(fullPagesHTML);
 
             printWindow.document.write(`
                         </div>
@@ -5276,54 +5181,49 @@ function showRoundEditModal(gameNumber: string) {
             `);
             printWindow.document.close();
             
-            if (downloadBackup) {
-                try {
-                    const htmlContent = "<!DOCTYPE html>\n" + printWindow.document.documentElement.outerHTML;
-                    const blob = new Blob([htmlContent], { type: 'text/html' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `Cartelas_Bingo_${title.replace(/[^a-z0-9]/gi, '_')}.html`;
-                    a.click();
-                    URL.revokeObjectURL(url);
-                } catch(err) {
-                    console.error("Erro ao baixar backup:", err);
-                }
-            }
-            
-            if (printBtn) {
-                printBtn.innerHTML = "Gerar e Imprimir";
-                printBtn.disabled = false;
-            }
-            
             // Auto close modal
             DOMElements.cardGeneratorModal.classList.add('hidden');
-            } catch (err: any) {
-                console.error("Generator Error:", err);
-                showAlert("Erro ao gerar cartelas: " + (err.message || err.toString()));
-                const printBtn = document.getElementById('generate-and-print-cards-btn') as HTMLButtonElement | null;
-                if (printBtn) {
-                    printBtn.innerHTML = "Gerar e Imprimir";
-                    printBtn.disabled = false;
-                }
-            }
         }
 
         function showCardGeneratorModal() {
-             const pin = appStore.state.appConfig.cardGeneratorPin;
-             if (pin) {
-                 const entered = prompt("Digite a senha de 4 dígitos para acessar o Gerador de Cartelas:");
-                 if (entered !== pin) {
-                     showAlert("Senha incorreta!");
-                     return;
-                 }
-             }
-
              if (appStore.state.appConfig.enableSoundEffects) sounds.playClick();
              DOMElements.cardGeneratorModal.innerHTML = getModalTemplates().cardGenerator;
              DOMElements.cardGeneratorModal.classList.remove('hidden');
 
+             const colorInput = document.getElementById('card-color') as HTMLInputElement;
+             const { activeGameNumber, gamesData, appConfig } = appStore.state;
+             
+             const config = appConfig.cardGeneratorConfig;
+             if (config) {
+                 (document.getElementById('card-batch-title') as HTMLInputElement).value = config.title || '';
+                 (document.getElementById('card-batch-location') as HTMLInputElement).value = config.location || '';
+                 (document.getElementById('card-batch-date') as HTMLInputElement).value = config.date || '';
+                 (document.getElementById('card-batch-price') as HTMLInputElement).value = config.price || '';
+                 (document.getElementById('card-quantity') as HTMLInputElement).value = config.quantity?.toString() || '120';
+                 (document.getElementById('card-opt-title') as HTMLInputElement).checked = config.showTitle ?? true;
+                 (document.getElementById('card-opt-locdate') as HTMLInputElement).checked = config.showLocationDate ?? true;
+                 (document.getElementById('card-opt-price') as HTMLInputElement).checked = config.showPrice ?? true;
+                 (document.getElementById('card-opt-prizes') as HTMLInputElement).checked = config.showPrizes ?? true;
+                 (document.getElementById('card-opt-qr') as HTMLInputElement).checked = config.showQRCode ?? true;
+                 (document.getElementById('card-opt-code') as HTMLInputElement).checked = config.showVerificationCode ?? true;
+             }
+             
+             if (colorInput) {
+                 if (config?.color) {
+                     colorInput.value = config.color;
+                 } else if (activeGameNumber && gamesData[activeGameNumber]?.color) {
+                     colorInput.value = gamesData[activeGameNumber].color;
+                 } else if (appConfig.boardColor && appConfig.boardColor !== 'default') {
+                     colorInput.value = appConfig.boardColor;
+                 } else {
+                     colorInput.value = '#0ea5e9'; // fallback sky-500
+                 }
+             }
 
+             document.getElementById('generate-and-print-cards-btn')!.addEventListener('click', generateAndPrintCards);
+             document.getElementById('close-card-generator-btn')!.addEventListener('click', () => {
+                 DOMElements.cardGeneratorModal.classList.add('hidden');
+             });
         }
 
         let scannerStream: MediaStream | null = null;
@@ -5360,9 +5260,8 @@ function showRoundEditModal(gameNumber: string) {
                 
                 // Procurar nas cartelas pelo numero curto (series)
                 let foundUuid = "";
-                const searchUpper = searchId.toUpperCase();
                 for (const [uuid, card] of Object.entries(appStore.state.cardsData)) {
-                    if (card.series.toString() === searchId || (card.code && card.code === searchUpper) || uuid.startsWith(searchId) || uuid.toUpperCase().startsWith(searchUpper)) {
+                    if (card.series.toString() === searchId) {
                         foundUuid = uuid;
                         break;
                     }
@@ -6352,7 +6251,7 @@ function showRoundEditModal(gameNumber: string) {
                      globalStatusEl.classList.remove('hidden');
                      if (eventId) {
                          globalStatusEl.className = 'flex items-center justify-center p-2 rounded-full shadow-lg bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-sm font-bold font-mono text-center px-6 border-2 border-green-400 dark:border-green-600';
-                         globalStatusEl.innerHTML = `<div class=\"cursor-pointer select-none flex items-center\" onclick=\"const idEl = document.getElementById('event-id-display'); if(idEl) idEl.classList.toggle('hidden');\">✅ Modo Online <span id=\"event-id-display\" class=\"hidden text-xs ml-2 opacity-80 font-normal\">ID: ${eventId}</span></div>`;
+                         globalStatusEl.innerHTML = `✅ Nuvem Ativa (ID: ${eventId})`;
                      } else {
                          globalStatusEl.className = 'flex items-center justify-center p-2 rounded-full shadow-lg bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 text-sm font-bold font-mono text-center px-6 border-2 border-yellow-400 dark:border-yellow-600';
                          globalStatusEl.innerHTML = `⏳ Conectando à Nuvem...`;
