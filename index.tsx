@@ -4394,9 +4394,9 @@ function applyAuctionZoom(scale: number) {
             const wonPrize2 = game.winners && game.winners.some((w: any) => w.bingoType === 'prize2');
             const wonPrize3 = game.winners && game.winners.some((w: any) => w.bingoType === 'prize3');
 
-            prize1Btn.disabled = !game.prizes.prize1 || wonPrize1;
-            prize2Btn.disabled = !game.prizes.prize2 || wonPrize2;
-            prize3Btn.disabled = !game.prizes.prize3 || wonPrize3;
+            prize1Btn.disabled = !game.prizes.prize1;
+            prize2Btn.disabled = !game.prizes.prize2;
+            prize3Btn.disabled = !game.prizes.prize3;
             
             if (!game.prizes.prize1) prize1Btn.style.display = 'none';
             else {
