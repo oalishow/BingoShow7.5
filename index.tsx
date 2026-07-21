@@ -4276,7 +4276,7 @@ function applyAuctionZoom(scale: number) {
         }
 
         function showVerificationPanel() {
-            const { activeGameNumber, gamesData, appConfig } = appStore.state;
+            const { activeGameNumber, gamesData, appConfig, appLabels } = appStore.state;
             if (!activeGameNumber) {
                 showAlert("Nenhuma rodada ativa para verificar.");
                 return;
