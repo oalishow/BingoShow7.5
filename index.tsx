@@ -44,7 +44,15 @@ let eventId = '';
                     "Espetinho - R$ 8,00", "Pastel - R$ 6,00", "Porção de Fritas - R$ 15,00"
                 ],
                 drawnPrizeNumbers: [] as number[],
-                versionHistory: `**v7.3.0 (Atual)**
+                versionHistory: `**v7.6.0 (Atual)**
+- **MODO CLARO:** Melhoria no contraste de cores para os nomes de patrocinadores e itens do cardápio no modo claro.
+- **PRIVACIDADE DE EVENTO:** O ID do evento online foi ocultado do status por padrão, sendo revelado apenas ao clicar no indicador "Modo Online".
+- **ATUALIZAÇÃO DE CRÉDITOS:** Atualização da Inteligência Artificial para Gemini 3.1 PRO.
+
+**v7.5.0**
+- Melhorias gerais e atualizações de design.
+
+**v7.3.0**
 - **NOVO LOGOTIPO:** Atualização do logotipo principal para um design mais colorido e moderno com gradientes e efeito 3D.
 - **DESIGN DO PAINEL:** Reformulação completa do painel de rodada ativa para o Modo Claro, utilizando bordas suaves, sombras e fundo branco para maior contraste e profissionalismo.
 - **LEGIBILIDADE DE PRÊMIOS:** Aumento significativo no tamanho da fonte dos prêmios e aplicação de contorno preto (text-stroke) nos valores, garantindo visibilidade máxima em projetores e ambientes iluminados.
@@ -119,20 +127,6 @@ let eventId = '';
                     showMenuInBreak: true,
                     sponsorEditorReusableBg: '',
                     sponsorEditorReusableBgOpacity: 100,
-                    cardGeneratorConfig: {
-                        title: '',
-                        location: '',
-                        date: '',
-                        price: '',
-                        quantity: 120,
-                        showTitle: true,
-                        showLocationDate: true,
-                        showPrice: true,
-                        showPrizes: true,
-                        showQRCode: true,
-                        showVerificationCode: true,
-                        color: '#0ea5e9'
-                    },
                     sponsorsByNumber: {} as Record<number, {name: string, image: string}>,
                     globalSponsor: { name: '', image: '' },
                     shortcuts: {
@@ -415,14 +409,20 @@ let eventId = '';
                 clearTimeout((this as any).firebaseSyncTimeout);
                 (this as any).firebaseSyncTimeout = setTimeout(async () => {
                    try {
-                       await setDoc(doc(db, "events", eventId), {
+                       const eventData: any = {
                            hostId: firebaseUser.uid,
                            activeGameNumber: this.state.activeGameNumber || '',
                            appName: this.state.appConfig.appName || '',
                            bingoTitle: this.state.appConfig.bingoTitle || '',
                            updatedAt: Date.now(),
-                           createdAt: this.state.appConfig.createdAt || Date.now()
-                       }, { merge: true });
+                           createdAt: this.state.appConfig.createdAt || Date.now(),
+                       };
+                       
+                       const stateToStore = JSON.parse(JSON.stringify(this.getAppStateForSaving(true)));
+                       
+                       eventData.fullStateJSON = JSON.stringify(stateToStore);
+
+                       await setDoc(doc(db, "events", eventId), eventData, { merge: true });
 
                        // Sync games
                        const promises = Object.keys(this.state.gamesData).map(gameId => {
@@ -549,7 +549,7 @@ let eventId = '';
         let winnerDisplayTimeout: any; 
 
         // --- Constants ---
-        const currentVersion = "7.5"; // Foco 100% Local
+        const currentVersion = "7.6"; // Foco 100% Local
         const buildInfo = "Build: 01/07/2026 - 12:24"; // Data e hora em formato DD/MM/AAAA 
         const DYNAMIC_LETTERS = ['B', 'I', 'N', 'G', 'O'];
         const DYNAMIC_LETTERS_AJUDE = ['A', 'J', 'U', 'D', 'E'];
@@ -609,6 +609,7 @@ let eventId = '';
             donationModal: document.getElementById('donation-modal'),
             finalWinnersModal: document.getElementById('final-winners-modal'),
             changelogModal: document.getElementById('changelog-modal'),
+            loadOptionsModal: document.getElementById('load-options-modal')!,
             showDonationModalBtn: document.getElementById('show-donation-modal-btn'),
             showChangelogBtn: document.getElementById('show-changelog-btn'),
             showSettingsBtn: document.getElementById('show-settings-btn'),
@@ -892,8 +893,8 @@ function populateSettingsShortcutsTab() {
                 sponsorDisplay: `<div class="modal-content text-center flex flex-col items-center justify-center p-4 m-auto w-full">
                                     <div id="sponsor-display-content-wrapper" class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl transition-transform duration-300 w-full max-w-7xl relative">
                                         <div id="sponsor-display-content" class="flex flex-col items-center justify-center h-full relative">
-                                            <div id="sponsor-info-display" class="flex flex-col items-center justify-center animate-fade-in-up p-4 w-full h-[60vh] max-h-[600px]">
-                                                <img id="sponsor-image" src="" class="max-w-full max-h-full object-contain rounded-lg shadow-lg mb-6">
+                                            <div id="sponsor-info-display" class="flex flex-col items-center justify-center animate-fade-in-up p-4 w-full h-full min-h-[50vh]">
+                                                <img id="sponsor-image" src="" class="w-full max-w-[1200px] max-h-[70vh] object-contain rounded-lg shadow-lg mb-6">
                                                 <p id="sponsor-name" class="font-bold text-amber-400 text-[52px]"></p>
                                             </div>
                                             <div id="sponsor-number-zoom-wrapper" class="absolute top-4 left-4 origin-top-left">
@@ -911,7 +912,7 @@ function populateSettingsShortcutsTab() {
                                         </div>
                                     </div>
                                     <div class="flex-shrink-0 mt-4 flex flex-col items-center z-10">
-                                         <div class="my-2 mx-auto w-full flex flex-row items-center justify-center gap-6">
+                                         <div class="my-2 mx-auto w-full flex flex-row flex-wrap items-center justify-center gap-6">
                                            <div class="flex items-center gap-2">
                                                <span class="text-sm font-bold text-slate-400 text-right">Geral:</span>
                                                <button id="zoom-out-btn-sponsor" class="bg-gray-200 dark:bg-gray-700 w-10 h-10 rounded-full font-bold text-2xl">-</button>
@@ -923,6 +924,12 @@ function populateSettingsShortcutsTab() {
                                                <button id="zoom-out-btn-sponsor-number" class="bg-gray-200 dark:bg-gray-700 w-10 h-10 rounded-full font-bold text-2xl">-</button>
                                                <span id="sponsor-number-zoom-value" class="font-bold text-lg w-16 text-center">100%</span>
                                                <button id="zoom-in-btn-sponsor-number" class="bg-gray-200 dark:bg-gray-700 w-10 h-10 rounded-full font-bold text-2xl">+</button>
+                                           </div>
+                                           <div class="flex items-center gap-2">
+                                               <span class="text-sm font-bold text-slate-400">Tempo:</span>
+                                               <button class="sponsor-speed-btn bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors" data-speed="5">5s</button>
+                                               <button class="sponsor-speed-btn bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors" data-speed="10">10s</button>
+                                               <button class="sponsor-speed-btn bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors" data-speed="15">15s</button>
                                            </div>
                                        </div>
                                         <div class="flex items-center justify-center gap-4 mt-2">
@@ -946,17 +953,17 @@ function populateSettingsShortcutsTab() {
                 congrats: `<div class="modal-content bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-2xl w-full text-center"><h2 class="text-5xl font-black text-yellow-400">${appLabels.congratsModalTitle}</h2><div id="congrats-winner-name" contenteditable="true" class="text-4xl font-bold text-gray-900 dark:text-white my-4 focus:outline-none focus:ring-2 ring-amber-500 rounded-lg px-2"></div><div id="congrats-prize-value" contenteditable="true" class="text-2xl text-slate-700 dark:text-slate-300 mb-6 focus:outline-none focus:ring-2 ring-amber-500 rounded-lg px-2"></div><p class="text-2xl text-sky-300 mt-4">${appLabels.congratsModalMessage}</p><button id="close-congrats-modal-btn" class="mt-8 bg-slate-600 hover:bg-slate-700 text-white font-bold py-3 px-8 rounded-full text-lg">${appLabels.congratsModalCloseButton}</button></div>`,
                 eventBreak: `<div class="modal-content bg-white dark:bg-gray-800/90 backdrop-blur-sm p-8 rounded-2xl shadow-2xl w-full h-full text-center flex flex-col justify-between">
                                 <header class="flex-shrink-0">
-                                    <h2 id="event-break-title" class="text-6xl font-black text-sky-400">${appLabels.intervalModalTitle}</h2>
+                                    <h2 id="event-break-title" class="text-6xl font-black text-sky-600 dark:text-sky-400">${appLabels.intervalModalTitle}</h2>
                                 </header>
                                 <main class="flex-grow my-8 grid grid-cols-1 md:grid-cols-2 gap-8 overflow-hidden relative z-10 min-h-0">
-                                    <div id="break-left-column" class="flex flex-col items-center bg-black/20 p-6 rounded-xl h-full overflow-hidden min-h-0">
-                                        <h3 id="break-left-title" class="text-5xl font-bold text-amber-400 mb-6 flex-shrink-0">Cardápio</h3>
-                                        <div id="break-left-content" class="flex-grow w-full h-full flex items-center justify-center text-7xl font-black text-gray-900 dark:text-white text-center transition-opacity duration-500 opacity-0 min-h-0"></div>
+                                    <div id="break-left-column" class="flex flex-col items-center bg-black/5 dark:bg-black/20 p-6 rounded-xl h-full overflow-hidden min-h-0">
+                                        <h3 id="break-left-title" class="text-5xl font-bold text-amber-600 dark:text-amber-400 mb-6 flex-shrink-0">Cardápio</h3>
+                                        <div id="break-left-content" class="flex-grow w-full h-full flex items-center justify-center text-7xl font-black text-slate-800 dark:text-white text-center transition-opacity duration-500 opacity-0 min-h-0"></div>
                                     </div>
-                                    <div id="break-right-column" class="flex flex-col items-center bg-black/20 p-6 rounded-xl h-full overflow-hidden relative min-h-0">
+                                    <div id="break-right-column" class="flex flex-col items-center bg-black/5 dark:bg-black/20 p-6 rounded-xl h-full overflow-hidden relative min-h-0">
                                         <div class="flex items-center justify-between w-full mb-6 flex-shrink-0">
                                             <div class="w-12"></div>
-                                            <h3 id="break-right-title" class="text-5xl font-bold text-amber-400">Apoio</h3>
+                                            <h3 id="break-right-title" class="text-5xl font-bold text-amber-600 dark:text-amber-400">Apoio</h3>
                                             <button id="toggle-sponsors-fullscreen-btn" class="w-12 h-12 bg-slate-700 hover:bg-slate-600 rounded-full flex items-center justify-center text-white cursor-pointer z-20 transition-colors" title="Tela Cheia">
                                                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
@@ -982,7 +989,7 @@ function populateSettingsShortcutsTab() {
                                            <button id="confirm-clear-round-btn" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-6 rounded-full text-lg" data-label-key="clearRoundConfirmButton">${appLabels.clearRoundConfirmButton}</button>
                                        </div>
                                    </div>`,
-                proofOptions: `<div class="modal-content bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-md w-full"><h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">${appLabels.proofOptionsModalTitle}</h2><p class="text-slate-600 dark:text-slate-400 mb-4">${appLabels.proofOptionsModalDescription}</p><div id="proof-options-list" class="space-y-2 max-h-60 overflow-y-auto"></div><div class="flex justify-end gap-4 mt-6"><button id="cancel-proof-btn" class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-2 px-6 rounded-full">${appLabels.modalCancelButton}</button><button id="generate-selected-proof-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-full">${appLabels.proofOptionsModalGenerateButton}</button></div></div>`,
+                proofOptions: `<div class="modal-content bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-md w-full"><h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">${appLabels.proofOptionsModalTitle}</h2><p class="text-slate-600 dark:text-slate-400 mb-4">${appLabels.proofOptionsModalDescription}</p><div id="proof-options-list" class="space-y-2 max-h-60 overflow-y-auto mb-4"></div><div class="mb-6"><label for="proof-signer-name" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Responsável pela Assinatura</label><input type="text" id="proof-signer-name" placeholder="Ex: João da Silva" class="w-full bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white p-2 rounded-lg border border-slate-300 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500 outline-none"></div><div class="flex justify-end gap-4 mt-6"><button id="cancel-proof-btn" class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-2 px-6 rounded-full">${appLabels.modalCancelButton}</button><button id="generate-selected-proof-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-full">${appLabels.proofOptionsModalGenerateButton}</button></div></div>`,
                 spinningWheel: `<div class="w-full h-full max-w-3xl max-h-[40rem] relative flex items-center justify-center"><div id="bingo-cage" class="w-full h-full absolute spinning-cage"><div id="number-cyclone" class="absolute w-full h-full transform-gpu"></div><div class="absolute w-full h-full border-8 border-gray-500 rounded-full" style="transform: rotateY(0deg) translateZ(0px);"></div><div class="absolute w-full h-full border-8 border-gray-500 rounded-full" style="transform: rotateY(30deg) translateZ(0px);"></div><div class="absolute w-full h-full border-8 border-gray-500 rounded-full" style="transform: rotateY(60deg) translateZ(0px);"></div><div class="absolute w-full h-full border-8 border-gray-500 rounded-full" style="transform: rotateY(90deg) translateZ(0px);"></div><div class="absolute w-full h-full border-8 border-gray-500 rounded-full" style="transform: rotateY(120deg) translateZ(0px);"></div><div class="absolute w-full h-full border-8 border-gray-500 rounded-full" style="transform: rotateY(150deg) translateZ(0px);"></div></div><div id="drawn-ball-container" class="z-10 opacity-0"></div></div><div class="absolute bottom-10 flex gap-4"><button id="skip-animation-btn" class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-2 px-6 rounded-full text-lg">${appLabels.spinningWheelSkipButton}</button><button id="close-drawn-btn" class="hidden bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-6 rounded-full text-lg">${appLabels.modalBackButton}</button></div>`,
                 resetConfirm: `<div class="modal-content bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center"><h2 class="text-2xl font-bold text-red-500 mb-4">${appLabels.resetConfirmModalTitle}</h2><p class="text-slate-700 dark:text-slate-300 text-lg mb-8">${appLabels.resetConfirmModalMessage}</p><div class="flex justify-center gap-4"><button id="cancel-reset-btn" class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-2 px-6 rounded-full text-lg">${appLabels.modalCancelButton}</button><button id="confirm-reset-btn" class="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-6 rounded-full text-lg">${appLabels.resetConfirmModalConfirmButton}</button></div></div>`,
                 drawnPrizes: `<div class="modal-content bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-2xl w-full text-center flex flex-col h-[70vh]">
@@ -1032,6 +1039,28 @@ function populateSettingsShortcutsTab() {
                                    <button id="close-changelog-btn" class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-2 px-6 rounded-full">${appLabels.modalCloseButton}</button>
                                </div>
                            </div>`,
+                loadOptions: `<div class="modal-content bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center">
+                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Opções de Carregamento</h2>
+                    <div class="flex flex-col gap-4">
+                        <label for="load-from-file-input" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-3 px-4 rounded-xl text-lg shadow-lg transition-all text-center cursor-pointer">
+                            📂 Carregar Arquivo JSON
+                        </label>
+                        <button id="show-load-cloud-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl text-lg shadow-lg transition-all text-center">
+                            ☁️ Carregar da Nuvem (ID)
+                        </button>
+                    </div>
+                    <button id="close-load-options-btn" class="mt-8 bg-slate-600 hover:bg-slate-700 text-white font-bold py-2 px-6 rounded-full text-lg">${appLabels.modalCloseButton}</button>
+                </div>`,
+                loadCloudPrompt: `<div class="modal-content bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center">
+                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Carregar Evento</h2>
+                    <p class="text-sm text-slate-600 dark:text-slate-400 mb-6">Digite o ID do evento para carregar os dados da nuvem.</p>
+                    <input type="text" id="cloud-event-id-input" placeholder="ID do Evento" class="w-full bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white p-3 rounded-lg text-center font-mono font-bold mb-4 border border-slate-300 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <input type="password" id="cloud-event-password-input" placeholder="Senha (se houver)" class="w-full bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white p-3 rounded-lg text-center font-bold mb-6 border border-slate-300 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <div class="flex justify-between gap-2">
+                        <button id="cancel-load-cloud-btn" class="flex-1 bg-slate-600 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-lg">Cancelar</button>
+                        <button id="confirm-load-cloud-btn" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2"><span id="cloud-load-spinner" class="hidden w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> Carregar</button>
+                    </div>
+                </div>`,
                 settings: `<div class="modal-content bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-4xl w-full">
                     <h2 class="text-3xl font-black text-amber-400 mb-4">${appLabels.settingsModalTitle}</h2>
                     
@@ -1082,11 +1111,15 @@ function populateSettingsShortcutsTab() {
                             <div class="border-b border-slate-300 dark:border-gray-700 pb-6 mt-6">
                                 <h3 class="text-xl font-bold text-slate-700 dark:text-slate-300 mb-2">🎈 Etapa 2: Online Sync</h3>
                                 <p class="text-sm text-slate-600 dark:text-slate-400 mb-2">Ative o modo Online para permitir que os jogadores acessem suas cartelas diretamente pelo celular escaneando o QR Code. Ao ativar, você precisará aguardar a sincronização (host online).</p>
-                                <div class="flex items-center gap-3 bg-indigo-100 dark:bg-indigo-900/50 p-3 rounded-lg border border-indigo-200 dark:border-indigo-800">
+                                <div class="flex items-center gap-3 bg-indigo-100 dark:bg-indigo-900/50 p-3 rounded-lg border border-indigo-200 dark:border-indigo-800 mb-4">
                                     <input type="checkbox" id="online-sync-toggle" class="h-5 w-5 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500">
                                     <label for="online-sync-toggle" class="text-slate-800 dark:text-indigo-200 font-bold">Transmitir rodadas ao vivo para cartelas digitais</label>
                                 </div>
-                                <div id="online-sync-status" class="mt-2 text-sm text-center hidden p-2 rounded max-w-sm ml-auto mr-auto break-all"></div>
+                                <h3 class="text-lg font-bold text-slate-700 dark:text-slate-300 mb-2">🔒 Senha do Evento (Opcional)</h3>
+                                <p class="text-sm text-slate-600 dark:text-slate-400 mb-2">Para proteger seu evento, defina uma senha. Quem for carregar esse evento precisará digitá-la.</p>
+                                <input type="text" id="event-password-input" placeholder="Digite uma senha..." class="w-full bg-white dark:bg-gray-800 text-slate-800 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 focus:outline-none focus:border-indigo-500">
+                                
+                                <div id="online-sync-status" class="mt-4 text-sm text-center hidden p-2 rounded max-w-sm ml-auto mr-auto break-all"></div>
                                 <div class="text-center mt-3">
                                     <button id="force-sync-cards-btn" class="hidden text-sm bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-colors">
                                         Subir Cartelas Antigas para Nuvem
@@ -1375,42 +1408,17 @@ function populateSettingsShortcutsTab() {
                       <div id="next-round-progress" class="bg-sky-500 h-2.5 rounded-full" style="width: 100%; transition: width 5s linear;"></div>
                     </div>
                  </div>`,
-                cardGenerator: `<div class="modal-content bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-2xl w-full text-center flex flex-col max-h-[90vh] overflow-y-auto">
+                cardGenerator: `<div class="modal-content bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-2xl w-full text-center flex flex-col">
                                    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">Gerador de Cartelas</h2>
-                                   <p class="text-slate-600 dark:text-slate-400 mb-6">As cartelas serão geradas no padrão de 6 por folha (A4 - Retrato).</p>
-                                   <div class="flex flex-col gap-4 mb-6 text-left">
+                                   <p class="text-slate-600 dark:text-slate-400 mb-6">As cartelas serão geradas no padrão de 6 por folha (A4 - Retrato), contendo QR Code e Número de Série para jogar online.</p>
+                                   <div class="flex flex-col gap-4 mb-6">
                                        <input type="text" id="card-batch-title" placeholder="Título (Ex: Bingo dos Amigos)" class="w-full text-lg font-bold p-3 border-2 border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
                                        <div class="flex flex-col sm:flex-row gap-2">
                                            <input type="text" id="card-batch-location" placeholder="Onde? (Local do Evento)" class="flex-[2] text-sm font-bold p-3 border-2 border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
                                            <input type="text" id="card-batch-date" placeholder="Data (ex: 20/DEZ)" class="flex-1 text-sm font-bold p-3 border-2 border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
                                            <input type="text" id="card-batch-price" placeholder="Valor (ex: R$ 10,00)" class="flex-1 text-sm font-bold p-3 border-2 border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
                                        </div>
-                                       
-                                       <div class="bg-gray-100 dark:bg-gray-700/50 p-4 rounded-xl border border-gray-200 dark:border-gray-600 space-y-3">
-                                            <h3 class="font-bold text-gray-700 dark:text-gray-300 text-sm uppercase tracking-wider mb-2">Visibilidade na Cartela</h3>
-                                            <div class="grid grid-cols-2 gap-3">
-                                                <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
-                                                    <input type="checkbox" id="card-opt-title" class="w-4 h-4 rounded text-sky-600 focus:ring-sky-500"> Mostrar Título
-                                                </label>
-                                                <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
-                                                    <input type="checkbox" id="card-opt-locdate" class="w-4 h-4 rounded text-sky-600 focus:ring-sky-500"> Mostrar Local/Data
-                                                </label>
-                                                <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
-                                                    <input type="checkbox" id="card-opt-price" class="w-4 h-4 rounded text-sky-600 focus:ring-sky-500"> Mostrar Preço
-                                                </label>
-                                                <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
-                                                    <input type="checkbox" id="card-opt-prizes" class="w-4 h-4 rounded text-sky-600 focus:ring-sky-500"> Mostrar Prêmios
-                                                </label>
-                                                <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
-                                                    <input type="checkbox" id="card-opt-qr" class="w-4 h-4 rounded text-sky-600 focus:ring-sky-500"> Mostrar QR Code
-                                                </label>
-                                                <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
-                                                    <input type="checkbox" id="card-opt-code" class="w-4 h-4 rounded text-sky-600 focus:ring-sky-500"> Mostrar ID p/ Check
-                                                </label>
-                                            </div>
-                                       </div>
-
-                                       <div class="flex items-center justify-between gap-2 mt-2">
+                                       <div class="flex items-center justify-between gap-2">
                                             <div class="flex-1 text-left text-sm font-bold text-slate-500 dark:text-slate-400">Total de Grades:</div>
                                             <input type="number" id="card-quantity" placeholder="Ex: 120 (rendem 20 folhas)" value="120" class="w-48 text-center text-lg font-bold p-3 border-2 border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
                                        </div>
@@ -1420,11 +1428,7 @@ function populateSettingsShortcutsTab() {
                                        </div>
                                        <div class="flex items-center gap-2 border-2 border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 p-3 rounded-lg">
                                            <input type="checkbox" id="card-reset-series" class="w-5 h-5 rounded cursor-pointer focus:ring-2 focus:ring-sky-500 accent-sky-600 border-gray-300">
-                                           <label class="text-slate-700 dark:text-slate-300 font-bold cursor-pointer flex-1" for="card-reset-series">Zerar numeração de série na geração</label>
-                                       </div>
-                                       <div class="flex items-center gap-2 border-2 border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 p-3 rounded-lg">
-                                           <input type="checkbox" id="card-save-template" class="w-5 h-5 rounded cursor-pointer focus:ring-2 focus:ring-sky-500 accent-sky-600 border-gray-300">
-                                           <label class="text-slate-700 dark:text-slate-300 font-bold cursor-pointer flex-1" for="card-save-template">Salvar estas configurações como padrão</label>
+                                           <label class="text-slate-700 dark:text-slate-300 font-bold cursor-pointer" for="card-reset-series">Zerar numeração de série na geração</label>
                                        </div>
                                    </div>
                                    <div class="flex justify-center gap-4 mb-4">
@@ -1467,25 +1471,36 @@ function confirmClearRound() {
     };
 }
 
-function generateProof(selectedGameKeys: string[]) {
+function generateProof(selectedGameKeys: string[], signerName: string = '') {
     const { gamesData, appConfig } = appStore.state;
     let proofContent = `
         <html>
         <head>
-            <title>Prova do Sorteio - ${appConfig.bingoTitle}</title>
+            <title>Relatório de Resultados - ${appConfig.bingoTitle}</title>
             <style>
-                body { font-family: sans-serif; margin: 2rem; }
-                h1 { text-align: center; }
-                h2 { border-bottom: 2px solid #ccc; padding-bottom: 5px; margin-top: 2rem; }
-                table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                th { background-color: #f2f2f2; }
-                .numbers { font-size: 0.8em; word-break: break-all; }
+                body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 4rem; color: #333; line-height: 1.6; }
+                h1 { text-align: center; color: #1a365d; margin-bottom: 0.5rem; font-size: 2.5em; text-transform: uppercase; letter-spacing: 1px; }
+                .subtitle { text-align: center; color: #64748b; font-size: 1.1em; margin-bottom: 3rem; }
+                h2 { color: #2563eb; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-top: 3rem; font-size: 1.8em; }
+                table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+                th, td { border: 1px solid #e2e8f0; padding: 12px 16px; text-align: left; }
+                th { background-color: #f8fafc; color: #475569; font-weight: 600; text-transform: uppercase; font-size: 0.9em; letter-spacing: 0.5px; }
+                tr:nth-child(even) { background-color: #f8fafc; }
+                .numbers { font-size: 0.9em; word-break: break-all; color: #475569; font-family: monospace; }
+                .signature-section { margin-top: 6rem; text-align: center; page-break-inside: avoid; }
+                .signature-line { width: 400px; border-bottom: 1px solid #333; margin: 0 auto; }
+                .signature-name { margin-top: 15px; font-weight: bold; font-size: 1.2em; color: #1e293b; }
+                .signature-title { margin-top: 5px; color: #64748b; font-size: 1em; }
+                .declaration { margin-top: 4rem; padding: 2rem; background-color: #f1f5f9; border-radius: 8px; border-left: 4px solid #3b82f6; text-align: justify; font-size: 1.1em; }
+                @media print {
+                    body { margin: 2rem; }
+                    .declaration { background-color: transparent; border: 1px solid #cbd5e1; }
+                }
             </style>
         </head>
         <body>
-            <h1>Prova do Sorteio - ${appConfig.bingoTitle}</h1>
-            <p style="text-align: center;">Gerado em: ${new Date().toLocaleString('pt-BR')}</p>
+            <h1>${appConfig.bingoTitle}</h1>
+            <p class="subtitle">Relatório Oficial de Resultados<br>Gerado em: ${new Date().toLocaleString('pt-BR')}</p>
     `;
 
     selectedGameKeys.forEach(key => {
@@ -1521,6 +1536,19 @@ function generateProof(selectedGameKeys: string[]) {
             proofContent += '</tbody></table>';
         }
     });
+
+    if (signerName) {
+        proofContent += `
+            <div class="declaration">
+                Declaramos, para os devidos fins de direito, que o presente relatório reflete fielmente e de forma auditável os resultados obtidos nos sorteios do evento "<b>${appConfig.bingoTitle}</b>", realizados no dia ${new Date().toLocaleDateString('pt-BR')}. Os números e/ou cartelas listados foram conferidos e confirmados como contemplados durante as rodadas correspondentes, em conformidade com as regras estabelecidas pela organização do evento.
+            </div>
+            <div class="signature-section">
+                <div class="signature-line"></div>
+                <div class="signature-name">${signerName}</div>
+                <div class="signature-title">Responsável pela Assinatura e Conferência</div>
+            </div>
+        `;
+    }
 
     proofContent += '</body></html>';
     
@@ -1558,7 +1586,8 @@ function showProofOptionsModal(isFinal = false) {
     document.getElementById('cancel-proof-btn')!.onclick = () => DOMElements.proofOptionsModal.classList.add('hidden');
     document.getElementById('generate-selected-proof-btn')!.onclick = () => {
         const selectedGameKeys = Array.from(optionsList.querySelectorAll<HTMLInputElement>('input:checked')).map(input => input.id.replace('proof-option-', ''));
-        generateProof(selectedGameKeys);
+        const signerName = (document.getElementById('proof-signer-name') as HTMLInputElement)?.value.trim() || '';
+        generateProof(selectedGameKeys, signerName);
         DOMElements.proofOptionsModal.classList.add('hidden');
         if(isFinal) DOMElements.finalWinnersModal.classList.add('hidden');
     };
@@ -1745,7 +1774,7 @@ function showFinalWinnersModal() {
                     content += `<div class="w-full flex-1 min-h-0 flex items-center justify-center mb-4"><img src="${s.image}" alt="${s.name || 'Patrocinador'}" class="max-w-full max-h-full object-contain drop-shadow-2xl"></div>`;
                 }
                 if (s.name) {
-                    content += `<span class="text-4xl md:text-5xl font-bold text-amber-400 flex-shrink-0">${s.name}</span>`;
+                    content += `<span class="text-4xl md:text-5xl font-bold text-amber-600 dark:text-amber-400 flex-shrink-0">${s.name}</span>`;
                 }
                 sponsorsList.innerHTML = `<div class="flex flex-col items-center justify-center w-full h-full min-h-0">${content}</div>`;
                 applyTransition(sponsorsList, 'in');
@@ -2236,7 +2265,7 @@ function showSponsorImageEditorModal(onSave: (base64: string) => void, initialTe
         }
         appStore.debouncedSave();
 
-        const base64 = canvas.toDataURL('image/jpeg', 0.9);
+        const base64 = canvas.toDataURL('image/jpeg', 0.8);
         onSave(base64);
         modal!.classList.add('hidden');
     });
@@ -2409,6 +2438,13 @@ function showSettingsModal() {
         }
     });
 
+    const passwordInput = document.getElementById('event-password-input') as HTMLInputElement;
+    passwordInput.value = appConfig.eventPassword || '';
+    passwordInput.addEventListener('input', (e) => {
+        appStore.state.appConfig.eventPassword = (e.target as HTMLInputElement).value;
+    });
+    passwordInput.addEventListener('change', () => appStore.debouncedSave());
+
     document.getElementById('force-sync-cards-btn')?.addEventListener('click', async () => {
         if (!eventId || !firebaseUser) return;
         const btn = document.getElementById('force-sync-cards-btn') as HTMLButtonElement;
@@ -2542,6 +2578,28 @@ function showSettingsModal() {
         
         // --- Funções Auxiliares ---
 
+function getConfettiFn() {
+    if (typeof confetti !== 'function') return null;
+    
+    if (document.fullscreenElement) {
+         const fsElement = document.fullscreenElement;
+         let canvas = document.getElementById('fs-confetti-canvas') as HTMLCanvasElement;
+         if (!canvas) {
+             canvas = document.createElement('canvas');
+             canvas.id = 'fs-confetti-canvas';
+             canvas.style.position = 'fixed';
+             canvas.style.inset = '0';
+             canvas.style.width = '100%';
+             canvas.style.height = '100%';
+             canvas.style.pointerEvents = 'none';
+             canvas.style.zIndex = '1000';
+             fsElement.appendChild(canvas);
+         }
+         return confetti.create(canvas, { resize: true, useWorker: true });
+    }
+    return confetti;
+}
+
 function triggerConfetti(options = {}) {
     const defaults = {
         particleCount: 150,
@@ -2549,8 +2607,9 @@ function triggerConfetti(options = {}) {
         origin: { y: 0.6 },
         zIndex: 1000,
     };
-    if (typeof confetti === 'function') {
-        confetti({ ...defaults, ...options });
+    const c = getConfettiFn();
+    if (c) {
+        c({ ...defaults, ...options });
     }
 }
 
@@ -2566,14 +2625,15 @@ function triggerBingoWinConfetti() {
     }
 
     const interval = setInterval(function() {
-        if (typeof confetti !== 'function') {
+        const c = getConfettiFn();
+        if (!c) {
              clearInterval(interval);
              return;
         }
 
         const particleCount = 50; // Efeito contínuo com contagem fixa de partículas
-        confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
-        confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
+        c({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
+        c({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
     }, 250);
     confettiAnimationId = interval as unknown as number;
 }
@@ -2629,7 +2689,29 @@ function applyAuctionZoom(scale: number) {
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
                 reader.onload = (event) => {
-                    resolve(event.target?.result as string);
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        const maxDim = 1000;
+                        if (width > maxDim || height > maxDim) {
+                            if (width > height) {
+                                height = Math.round((height * maxDim) / width);
+                                width = maxDim;
+                            } else {
+                                width = Math.round((width * maxDim) / height);
+                                height = maxDim;
+                            }
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx?.drawImage(img, 0, 0, width, height);
+                        resolve(canvas.toDataURL('image/webp', 0.85));
+                    };
+                    img.onerror = reject;
+                    img.src = event.target?.result as string;
                 };
                 reader.onerror = error => reject(error);
             });
@@ -3386,45 +3468,76 @@ function applyAuctionZoom(scale: number) {
             confirmBtn.addEventListener('click', confirmAndAnnounce);
             cancelBtn.addEventListener('click', cancelDraw);
 
-            clearTimeout(floatingNumberTimeout as ReturnType<typeof setTimeout>);
-            if ((window as any).sponsorCountdownInterval) {
-                clearInterval((window as any).sponsorCountdownInterval);
-            }
-
-            if (appConfig.enableModalAutoclose) {
-                const sponsorDuration = (appConfig.modalAutocloseSeconds + 3) * 1000; 
-                floatingNumberTimeout = setTimeout(confirmAndAnnounce, sponsorDuration); 
+            let currentCountdownValue = appConfig.modalAutocloseSeconds;
+            
+            const startCountdown = (seconds: number) => {
+                clearTimeout(floatingNumberTimeout as ReturnType<typeof setTimeout>);
+                if ((window as any).sponsorCountdownInterval) {
+                    clearInterval((window as any).sponsorCountdownInterval);
+                }
                 
-                if (appConfig.showSponsorCountdown) {
-                    const wrapper = document.getElementById('sponsor-countdown-wrapper');
-                    const textEl = document.getElementById('sponsor-countdown-text');
-                    const circleEl = document.getElementById('sponsor-countdown-circle');
+                if (appConfig.enableModalAutoclose) {
+                    const sponsorDuration = (seconds + 3) * 1000; 
+                    floatingNumberTimeout = setTimeout(confirmAndAnnounce, sponsorDuration); 
                     
-                    if (wrapper && textEl && circleEl) {
-                        wrapper.classList.remove('hidden');
-                        let remaining = appConfig.modalAutocloseSeconds + 3;
-                        textEl.textContent = remaining.toString();
+                    if (appConfig.showSponsorCountdown) {
+                        const wrapper = document.getElementById('sponsor-countdown-wrapper');
+                        const textEl = document.getElementById('sponsor-countdown-text');
+                        const circleEl = document.getElementById('sponsor-countdown-circle');
                         
-                        const totalDash = 283; // 2 * PI * r (r=45)
-                        circleEl.style.strokeDashoffset = '0';
-                        
-                        let elapsedSteps = 0;
-                        const totalSteps = remaining;
-                        
-                        (window as any).sponsorCountdownInterval = setInterval(() => {
-                            remaining--;
-                            elapsedSteps++;
-                            if (remaining >= 0) {
-                                textEl.textContent = remaining.toString();
-                                const offset = (elapsedSteps / totalSteps) * totalDash;
-                                circleEl.style.strokeDashoffset = offset.toString();
-                            } else {
-                                clearInterval((window as any).sponsorCountdownInterval);
-                            }
-                        }, 1000);
+                        if (wrapper && textEl && circleEl) {
+                            wrapper.classList.remove('hidden');
+                            let remaining = seconds + 3;
+                            textEl.textContent = remaining.toString();
+                            
+                            const totalDash = 283; // 2 * PI * r (r=45)
+                            circleEl.style.strokeDashoffset = '0';
+                            
+                            let elapsedSteps = 0;
+                            const totalSteps = remaining;
+                            
+                            (window as any).sponsorCountdownInterval = setInterval(() => {
+                                remaining--;
+                                elapsedSteps++;
+                                if (remaining >= 0) {
+                                    textEl.textContent = remaining.toString();
+                                    const offset = (elapsedSteps / totalSteps) * totalDash;
+                                    circleEl.style.strokeDashoffset = offset.toString();
+                                } else {
+                                    clearInterval((window as any).sponsorCountdownInterval);
+                                }
+                            }, 1000);
+                        }
                     }
                 }
-            }
+            };
+            
+            startCountdown(currentCountdownValue);
+            
+            const updateSpeedButtons = () => {
+                document.querySelectorAll('.sponsor-speed-btn').forEach(btn => {
+                    const speed = parseInt((btn as HTMLElement).dataset.speed!);
+                    if (speed === currentCountdownValue) {
+                        btn.classList.add('bg-sky-500', 'text-white');
+                        btn.classList.remove('bg-gray-200', 'dark:bg-gray-700');
+                    } else {
+                        btn.classList.remove('bg-sky-500', 'text-white');
+                        btn.classList.add('bg-gray-200', 'dark:bg-gray-700');
+                    }
+                });
+            };
+            
+            document.querySelectorAll('.sponsor-speed-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const speed = parseInt((e.target as HTMLElement).dataset.speed!);
+                    currentCountdownValue = speed;
+                    appStore.state.appConfig.modalAutocloseSeconds = speed;
+                    appStore.debouncedSave();
+                    updateSpeedButtons();
+                    startCountdown(speed);
+                });
+            });
+            updateSpeedButtons();
         }
 
         function handleAutoDraw() {
@@ -4437,15 +4550,15 @@ function applyAuctionZoom(scale: number) {
                             if (item.image) {
                                 innerHTML += `<div class="w-full flex-1 min-h-0 flex items-center justify-center p-2 md:p-6"><img src="${item.image}" class="max-w-full max-h-full object-contain drop-shadow-2xl ${isFullscreen ? 'transform scale-125' : ''} transition-transform duration-700"></div>`;
                             } else {
-                                innerHTML += `<p class="text-6xl md:text-8xl text-center font-black text-amber-400 flex-shrink-0">${item.name || 'Patrocinador'}</p>`;
+                                innerHTML += `<p class="text-6xl md:text-8xl text-center font-black text-amber-600 dark:text-amber-400 flex-shrink-0">${item.name || 'Patrocinador'}</p>`;
                             }
                         } else {
                             rightTitleEl.textContent = "Vencedores";
                             if (item.name) {
-                                innerHTML += `<p class="text-5xl md:text-7xl text-center font-bold text-slate-100 mb-6">${item.name}</p>`;
+                                innerHTML += `<p class="text-5xl md:text-7xl text-center font-bold text-slate-800 dark:text-slate-100 mb-6">${item.name}</p>`;
                             }
                             if (item.prize) {
-                                innerHTML += `<p class="text-6xl md:text-8xl text-center font-black text-amber-400">${item.prize}</p>`;
+                                innerHTML += `<p class="text-6xl md:text-8xl text-center font-black text-amber-600 dark:text-amber-400">${item.prize}</p>`;
                             }
                         }
                         
@@ -4856,32 +4969,6 @@ function showRoundEditModal(gameNumber: string) {
             const isLight = isLightColor(cardColor);
             const headerTextColor = isLight ? '#000000' : '#ffffff';
 
-            const optTitle = (document.getElementById('card-opt-title') as HTMLInputElement)?.checked ?? true;
-            const optLocDate = (document.getElementById('card-opt-locdate') as HTMLInputElement)?.checked ?? true;
-            const optPrice = (document.getElementById('card-opt-price') as HTMLInputElement)?.checked ?? true;
-            const optPrizes = (document.getElementById('card-opt-prizes') as HTMLInputElement)?.checked ?? true;
-            const optQR = (document.getElementById('card-opt-qr') as HTMLInputElement)?.checked ?? true;
-            const optCode = (document.getElementById('card-opt-code') as HTMLInputElement)?.checked ?? true;
-            const saveTemplate = (document.getElementById('card-save-template') as HTMLInputElement)?.checked ?? false;
-
-            if (saveTemplate) {
-                 appStore.state.appConfig.cardGeneratorConfig = {
-                      title,
-                      location: locationVal,
-                      date: dateVal,
-                      price: priceVal,
-                      quantity,
-                      color: cardColor,
-                      showTitle: optTitle,
-                      showLocationDate: optLocDate,
-                      showPrice: optPrice,
-                      showPrizes: optPrizes,
-                      showQRCode: optQR,
-                      showVerificationCode: optCode
-                 };
-                 appStore.debouncedSave();
-            }
-
             if (isNaN(quantity) || quantity <= 0 || quantity > 5000) {
                 showAlert("Por favor, insira uma quantidade válida entre 1 e 5000.");
                 return;
@@ -5085,22 +5172,15 @@ function showRoundEditModal(gameNumber: string) {
                         
                                 <!-- Info Column (Right side) -->
                                 <div class="w-[28%] flex flex-col items-center bg-white p-[2px] justify-between flex-shrink-0 min-h-0">
-                                    ${optQR ? `
                                     <div class="text-[7px] font-bold leading-tight uppercase mb-[1px] text-center px-1">Escaneie para<br>jogar</div>
                                     <img src="${qrDataUrl}" alt="QR" class="w-20 h-20 border-[2px] border-black object-contain bg-white" />
-                                    ` : ''}
-                                    
-                                    ${optCode ? `
-                                    <div class="text-[6px] text-gray-700 uppercase font-black tracking-widest break-all font-mono mt-1 text-center leading-none" style="margin-top: 4px;">CÓD: ${uuid.substring(0,8)}</div>
-                                    ` : ''}
+                                    <div class="text-[4px] text-gray-500 uppercase tracking-widest break-all font-mono mb-[2px]">ID: ${uuid.substring(0,8)}</div>
                                     
                                     <!-- Premiações abaixo do QR Code -->
-                                    ${optPrizes ? `
-                                    <div class="flex-grow w-full border-t-[2px] border-black pt-0.5 px-0 flex flex-col gap-[1px] mt-auto bg-gray-50 overflow-hidden" style="margin-top: 4px;">
+                                    <div class="flex-grow w-full border-t-[2px] border-black pt-0.5 px-0 flex flex-col gap-[1px] mt-auto bg-gray-50 overflow-hidden">
                                         <div class="text-[5px] font-black uppercase text-center w-full leading-tight bg-gray-200 border border-black py-[1px]">Premiações</div>
                                         ${gridSideText}
                                     </div>
-                                    ` : ''}
                                 </div>
                             </div>
                         </div>
@@ -5113,16 +5193,12 @@ function showRoundEditModal(gameNumber: string) {
                     <div class="bg-white border-[4px] border-black flex flex-col w-full h-[287mm] max-w-[210mm] mx-auto p-1 box-border print:p-0" style="page-break-after: always; overflow: hidden;">
                         <!-- MASTER HEADER -->
                         <div class="border-[2px] border-black mb-1 flex flex-col flex-shrink-0">
-                            ${optTitle ? `
                             <h1 class="text-center font-black text-3xl uppercase py-1.5 m-0 leading-none tracking-widest" style="background-color: ${cardColor}; color: ${headerTextColor};">
                                 ${title}
                             </h1>
-                            ` : ''}
                             <div class="flex border-t-[2px] border-black text-[9px] font-bold uppercase divide-x-[2px] divide-black">
-                                ${optLocDate ? `
                                 <div class="flex-1 px-1 py-1 flex items-center">ONDE:&nbsp;<span class="font-normal border-b border-black flex-grow ml-1 min-w-[20px] truncate">${locationVal}</span></div>
                                 <div class="w-32 px-1 py-1 flex items-center">DATA:&nbsp;<span class="font-normal border-b border-black flex-grow ml-1 min-w-[20px] truncate">${dateVal}</span></div>
-                                ` : '<div class="flex-1 bg-white"></div>'}
                                 <div class="w-[85px] bg-gray-200 flex flex-col items-center justify-center leading-none p-[2px]">
                                     <span class="text-[7px]">CARTELA Nº</span>
                                     <span class="text-sm font-black">${String(folhaNumber).padStart(5, '0')}</span>
@@ -5138,13 +5214,8 @@ function showRoundEditModal(gameNumber: string) {
                         <!-- MASTER BOTTOM STUB -->
                         <div class="border-[2px] border-black mt-auto flex flex-col uppercase text-[9px] font-bold leading-none flex-shrink-0 bg-white">
                             <div class="flex border-b-[2px] border-black divide-x-[2px] divide-black bg-gray-100">
-                                 ${optTitle ? `
                                  <div class="flex-1 px-2 py-1 flex items-center justify-center"><span class="font-black text-sm tracking-widest truncate max-w-[250px]">${title}</span></div>
-                                 ` : '<div class="flex-1 bg-gray-100"></div>'}
-                                 
-                                 ${optPrice ? `
                                  <div class="w-28 px-2 py-1 flex items-center">VALOR:&nbsp;<span class="font-black text-xs ml-auto min-w-[20px]">${priceVal}</span></div>
-                                 ` : ''}
                                  <div class="w-[85px] bg-gray-300 flex flex-col items-center justify-center py-0.5">
                                       <span class="text-[6px]">CARTELA Nº</span>
                                       <span class="text-sm font-black leading-none">${String(folhaNumber).padStart(5, '0')}</span>
@@ -5192,26 +5263,8 @@ function showRoundEditModal(gameNumber: string) {
 
              const colorInput = document.getElementById('card-color') as HTMLInputElement;
              const { activeGameNumber, gamesData, appConfig } = appStore.state;
-             
-             const config = appConfig.cardGeneratorConfig;
-             if (config) {
-                 (document.getElementById('card-batch-title') as HTMLInputElement).value = config.title || '';
-                 (document.getElementById('card-batch-location') as HTMLInputElement).value = config.location || '';
-                 (document.getElementById('card-batch-date') as HTMLInputElement).value = config.date || '';
-                 (document.getElementById('card-batch-price') as HTMLInputElement).value = config.price || '';
-                 (document.getElementById('card-quantity') as HTMLInputElement).value = config.quantity?.toString() || '120';
-                 (document.getElementById('card-opt-title') as HTMLInputElement).checked = config.showTitle ?? true;
-                 (document.getElementById('card-opt-locdate') as HTMLInputElement).checked = config.showLocationDate ?? true;
-                 (document.getElementById('card-opt-price') as HTMLInputElement).checked = config.showPrice ?? true;
-                 (document.getElementById('card-opt-prizes') as HTMLInputElement).checked = config.showPrizes ?? true;
-                 (document.getElementById('card-opt-qr') as HTMLInputElement).checked = config.showQRCode ?? true;
-                 (document.getElementById('card-opt-code') as HTMLInputElement).checked = config.showVerificationCode ?? true;
-             }
-             
              if (colorInput) {
-                 if (config?.color) {
-                     colorInput.value = config.color;
-                 } else if (activeGameNumber && gamesData[activeGameNumber]?.color) {
+                 if (activeGameNumber && gamesData[activeGameNumber]?.color) {
                      colorInput.value = gamesData[activeGameNumber].color;
                  } else if (appConfig.boardColor && appConfig.boardColor !== 'default') {
                      colorInput.value = appConfig.boardColor;
@@ -5610,9 +5663,10 @@ function showRoundEditModal(gameNumber: string) {
                              section.classList.add('p-4');
                         }
                         
-                        ['floating-number-modal', 'custom-alert-modal', 'congrats-modal', 'winner-modal', 'sponsor-display-modal', 'verification-modal', 'event-break-modal', 'round-edit-modal'].forEach(modalId => {
-                             const el = document.getElementById(modalId);
-                             if (el) section.appendChild(el);
+                        document.querySelectorAll('.fixed.inset-0').forEach(el => {
+                            if (el.id !== 'confetti-canvas') {
+                                section.appendChild(el);
+                            }
                         });
 
                         if (id === 'board-section') {
@@ -5660,7 +5714,7 @@ function showRoundEditModal(gameNumber: string) {
                              section.classList.remove('p-4');
                         }
                         
-                        ['floating-number-modal', 'custom-alert-modal', 'congrats-modal', 'winner-modal', 'sponsor-display-modal', 'verification-modal', 'event-break-modal', 'round-edit-modal'].forEach(modalId => {
+                        ['floating-number-modal', 'custom-alert-modal', 'congrats-modal', 'winner-modal', 'sponsor-display-modal', 'verification-modal', 'event-break-modal', 'round-edit-modal', 'spinning-wheel-modal', 'next-round-modal'].forEach(modalId => {
                              const el = document.getElementById(modalId);
                              if (el) document.body.appendChild(el);
                         });
@@ -5678,9 +5732,10 @@ function showRoundEditModal(gameNumber: string) {
                         }
                         
                         if (!document.fullscreenElement) {
-                            ['floating-number-modal', 'custom-alert-modal', 'congrats-modal', 'winner-modal', 'sponsor-display-modal', 'verification-modal', 'event-break-modal'].forEach(modalId => {
-                                const el = document.getElementById(modalId);
-                                if (el) document.body.appendChild(el);
+                            document.querySelectorAll('.fixed.inset-0').forEach(el => {
+                                if (el.id !== 'confetti-canvas') {
+                                    document.body.appendChild(el);
+                                }
                             });
                         }
                     }
@@ -5821,6 +5876,11 @@ function showRoundEditModal(gameNumber: string) {
             if (fsAutoDrawBtn) {
                 fsAutoDrawBtn.addEventListener('click', handleAutoDraw);
             }
+            
+            const fsIntervalBtn = document.getElementById('fs-interval-btn');
+            if (fsIntervalBtn) {
+                fsIntervalBtn.addEventListener('click', showIntervalModal);
+            }
 
 
             
@@ -5947,9 +6007,86 @@ function showRoundEditModal(gameNumber: string) {
                 appStore.debouncedSave();
             });
             
-            (document.getElementById('load-from-file-input') as HTMLInputElement).addEventListener('change', loadStateFromFile);
+            (document.getElementById('load-from-file-input') as HTMLInputElement).addEventListener('change', (e) => {
+                loadStateFromFile(e);
+                DOMElements.loadOptionsModal.classList.add('hidden');
+            });
             document.getElementById('save-to-file-btn')!.addEventListener('click', saveStateToFile);
-            // Redundant click listener removed: the label in HTML already has for="load-from-file-input"
+            
+            document.getElementById('show-load-options-btn')?.addEventListener('click', () => {
+                DOMElements.loadOptionsModal.innerHTML = getModalTemplates().loadOptions;
+                document.getElementById('close-load-options-btn')?.addEventListener('click', () => DOMElements.loadOptionsModal.classList.add('hidden'));
+                
+                document.getElementById('show-load-cloud-btn')?.addEventListener('click', () => {
+                    DOMElements.loadOptionsModal.innerHTML = getModalTemplates().loadCloudPrompt;
+                    document.getElementById('cancel-load-cloud-btn')?.addEventListener('click', () => {
+                        DOMElements.loadOptionsModal.classList.add('hidden');
+                    });
+                    document.getElementById('confirm-load-cloud-btn')?.addEventListener('click', async () => {
+                        const input = document.getElementById('cloud-event-id-input') as HTMLInputElement;
+                        const eventIdToLoad = input.value.trim();
+                        if (!eventIdToLoad) return;
+                        
+                        const spinner = document.getElementById('cloud-load-spinner');
+                        spinner?.classList.remove('hidden');
+                        const btn = document.getElementById('confirm-load-cloud-btn') as HTMLButtonElement;
+                        btn.disabled = true;
+
+                        if (!firebaseUser) {
+                            try {
+                                await signInAnonymously(auth);
+                            } catch (e) {
+                                showAlert("Erro: Não foi possível conectar ao servidor.");
+                                spinner?.classList.add('hidden');
+                                btn.disabled = false;
+                                return;
+                            }
+                        }
+
+                        try {
+                            const docSnap = await getDoc(doc(db, "events", eventIdToLoad));
+                            if (docSnap.exists()) {
+                                const data = docSnap.data();
+                                if (data.fullStateJSON) {
+                                    const parsedState = JSON.parse(data.fullStateJSON);
+                                    const requiredPassword = parsedState.appConfig?.eventPassword;
+                                    const providedPassword = (document.getElementById('cloud-event-password-input') as HTMLInputElement)?.value.trim() || '';
+                                    if (requiredPassword && requiredPassword !== providedPassword) {
+                                        showAlert("Senha incorreta ou não fornecida para este evento.");
+                                        spinner?.classList.add('hidden');
+                                        btn.disabled = false;
+                                        return;
+                                    }
+                                    
+                                    appStore.loadStateFromObject(parsedState);
+                                    appStore.state.appConfig.eventId = eventIdToLoad;
+                                    appStore.state.appConfig.onlineSyncEnabled = true;
+                                    renderUIFromState();
+                                    updateActiveRoundStats();
+                                    applyTheme();
+                                    applyLabels();
+                                    appStore.debouncedSave();
+                                    initFirebaseSync();
+                                    showAlert("Evento carregado com sucesso da nuvem!");
+                                    DOMElements.loadOptionsModal.classList.add('hidden');
+                                } else {
+                                    showAlert("O evento encontrado não possui um backup completo.");
+                                }
+                            } else {
+                                showAlert("Evento não encontrado. Verifique o ID.");
+                            }
+                        } catch (error: any) {
+                            console.error("Erro ao carregar evento da nuvem:", error);
+                            showAlert(`Erro: ${error.message}`);
+                        } finally {
+                            spinner?.classList.add('hidden');
+                            btn.disabled = false;
+                        }
+                    });
+                });
+                
+                DOMElements.loadOptionsModal.classList.remove('hidden');
+            });
 
             if (DOMElements.showCardGeneratorBtn) {
                 DOMElements.showCardGeneratorBtn.addEventListener('click', showCardGeneratorModal);
@@ -6250,8 +6387,15 @@ function showRoundEditModal(gameNumber: string) {
                  if (appStore.state.appConfig.onlineSyncEnabled) {
                      globalStatusEl.classList.remove('hidden');
                      if (eventId) {
-                         globalStatusEl.className = 'flex items-center justify-center p-2 rounded-full shadow-lg bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-sm font-bold font-mono text-center px-6 border-2 border-green-400 dark:border-green-600';
-                         globalStatusEl.innerHTML = `✅ Nuvem Ativa (ID: ${eventId})`;
+                         globalStatusEl.className = 'flex items-center justify-center p-2 rounded-full shadow-lg bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-sm font-bold font-mono text-center px-6 border-2 border-green-400 dark:border-green-600 cursor-pointer hover:bg-green-200 dark:hover:bg-green-800 transition-colors';
+                         globalStatusEl.innerHTML = `✅ Modo Online <span class="ml-1 text-xs opacity-75">(Clique p/ Copiar ID)</span>`;
+                         globalStatusEl.onclick = () => {
+                             navigator.clipboard.writeText(eventId).then(() => {
+                                 showAlert(`ID do Evento copiado para a área de transferência:\n${eventId}`);
+                             }).catch(() => {
+                                 showAlert(`O ID do Evento é:\n${eventId}`);
+                             });
+                         };
                      } else {
                          globalStatusEl.className = 'flex items-center justify-center p-2 rounded-full shadow-lg bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 text-sm font-bold font-mono text-center px-6 border-2 border-yellow-400 dark:border-yellow-600';
                          globalStatusEl.innerHTML = `⏳ Conectando à Nuvem...`;

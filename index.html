@@ -432,7 +432,7 @@
                 <div class="flex flex-col gap-2 mb-4 flex-shrink-0">
                     <div class="grid grid-cols-2 gap-2">
                         <button id="save-to-file-btn" class="w-full min-h-[44px] bg-green-600 hover:bg-green-700 text-white font-bold py-2 min-h-[44px] px-4 rounded-lg text-xs shadow-lg transition-all text-center" data-label-key="saveToFileButton">💾 Salvar (PC)</button>
-                        <label id="load-from-file-btn" for="load-from-file-input" class="w-full min-h-[44px] bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 min-h-[44px] px-4 rounded-lg text-xs shadow-lg transition-all text-center cursor-pointer" data-label-key="loadFromFileButton">📂 Carregar</label>
+                        <button id="show-load-options-btn" class="w-full min-h-[44px] bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 min-h-[44px] px-4 rounded-lg text-xs shadow-lg transition-all text-center cursor-pointer" data-label-key="loadFromFileButton">📂 Carregar</button>
                         <input type="file" id="load-from-file-input" class="hidden" accept=".json,application/json">
                     </div>
                     <div class="grid grid-cols-2 gap-2">
@@ -528,7 +528,8 @@
                              <select id="fs-round-selector" class="bg-white dark:bg-gray-800 text-slate-800 dark:text-white border-2 border-sky-400 font-bold py-2 min-h-[44px] px-4 rounded-lg text-sm shadow-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
                              </select>
                              <button id="fs-next-round-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 min-h-[44px] px-3 rounded-xl text-sm shadow-lg transition-transform transform hover:scale-105" title="Próxima Rodada">▶</button>
-                             <button id="fs-auto-draw-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 min-h-[44px] px-4 rounded-xl text-sm shadow-lg transition-transform transform hover:scale-105 ml-2" data-label-key="autoDrawButton">Sorteio Auto</button>
+                             <button id="fs-interval-btn" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 min-h-[44px] px-4 rounded-xl text-sm shadow-lg transition-transform transform hover:scale-105 ml-2">⏱️ Intervalo</button>
+                             <button id="fs-auto-draw-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 min-h-[44px] px-4 rounded-xl text-sm shadow-lg transition-transform transform hover:scale-105 ml-2 hidden" data-label-key="autoDrawButton">Sorteio Auto</button>
                         </div>
                     </div>
 
@@ -703,39 +704,40 @@
             <p class="max-w-4xl mx-auto">
                 Este programa é o resultado do Trabalho de Conclusão de Curso de <a href="https://www.instagram.com/oalison.rodrigues" target="_blank" class="text-sky-400 hover:underline">Alison Fernando Rodrigues dos Santos</a>, sob orientação do <a href="https://www.instagram.com/danilonobresant" target="_blank" class="text-sky-400 hover:underline">Prof. Pe. Dr. Danilo Nobre dos Santos</a> Título: "E O VERBO SE FEZ I.A.? DA REFLEXÃO TEOLÓGICA E COMUNICATIVA AO DESENVOLVIMENTO DE SOLUÇÕES PASTORAIS COM INTELIGÊNCIA ARTIFICIAL". (<a href="https://drive.google.com/file/d/14uPBeHCT5aP1ACPLlPpIjfD5J1iLQfyD/view?usp=drive_link" target="_blank" class="text-sky-400 hover:underline">Link para acessar</a>)
                 <br>
-                Desenvolvido inteiramente com a Inteligência Artificial Gemini 2.5 PRO da Google, este projeto demonstra como é possível criar soluções pastorais inovadoras com criatividade e ferramentas de baixo custo ou gratuitas, mesmo sem conhecimentos prévios em programação.
+                Desenvolvido inteiramente com a Inteligência Artificial Gemini 3.1 PRO da Google, este projeto demonstra como é possível criar soluções pastorais inovadoras com criatividade e ferramentas de baixo custo ou gratuitas, mesmo sem conhecimentos prévios em programação.
             </p>
             <p class="mt-2 text-slate-500 dark:text-slate-400">
-                <button id="show-changelog-btn" class="hover:underline text-sky-600 dark:text-sky-400 font-medium">Histórico de Versões</button> | Versão <span id="version" class="font-bold">7.5</span> - <span id="last-updated" class="italic">Carregando...</span>
+                <button id="show-changelog-btn" class="hover:underline text-sky-600 dark:text-sky-400 font-medium">Histórico de Versões</button> | Versão <span id="version" class="font-bold">7.6</span> - <span id="last-updated" class="italic">Carregando...</span>
             </p>
             <p id="build-footer" class="text-[9px] opacity-60 dark:opacity-50 mt-1 uppercase tracking-widest font-mono select-none"></p>
         </footer>
     </div>
     
     <!-- MODAIS (INICIALMENTE OCULTOS) -->
-    <div id="verification-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden"></div>
-    <div id="floating-number-modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-50 hidden"></div>
+    <div id="verification-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[70] hidden"></div>
+    <div id="floating-number-modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-[70] hidden"></div>
     <div id="sponsor-display-modal" class="fixed inset-0 bg-black bg-opacity-80 flex flex-col p-4 overflow-y-auto z-50 hidden"></div>
-    <div id="winner-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden"></div>
-    <div id="custom-alert-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden"></div>
-    <div id="congrats-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden"></div>
-    <div id="event-break-modal" class="fixed inset-0 bg-gray-100 dark:bg-gray-900 bg-opacity-95 flex items-center justify-center p-4 z-50 hidden"></div>
-    <div id="menu-edit-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden"></div>
-    <div id="winner-edit-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden"></div>
-    <div id="delete-confirm-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden"></div>
-    <div id="clear-round-confirm-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden"></div>
-    <div id="proof-options-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden"></div>
-    <div id="spinning-wheel-modal" class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 hidden"></div>
-    <div id="reset-confirm-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden"></div>
-    <div id="drawn-prizes-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden"></div>
-    <div id="donation-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[60] hidden" style="z-index: 60;"></div>
-    <div id="final-winners-modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-50 hidden"></div>
-    <div id="changelog-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden"></div>
-    <div id="settings-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden"></div>
-    <div id="round-edit-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden"></div>
-    <div id="next-round-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[60] hidden"></div>
-    <div id="card-generator-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden"></div>
-    <div id="card-scanner-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden"></div>
+    <div id="winner-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[70] hidden"></div>
+    <div id="custom-alert-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[70] hidden"></div>
+    <div id="congrats-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[70] hidden"></div>
+    <div id="event-break-modal" class="fixed inset-0 bg-gray-100 dark:bg-gray-900 bg-opacity-95 flex items-center justify-center p-4 z-[70] hidden"></div>
+    <div id="menu-edit-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[70] hidden"></div>
+    <div id="winner-edit-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[70] hidden"></div>
+    <div id="delete-confirm-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[70] hidden"></div>
+    <div id="clear-round-confirm-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[70] hidden"></div>
+    <div id="proof-options-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[70] hidden"></div>
+    <div id="spinning-wheel-modal" class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[70] hidden"></div>
+    <div id="reset-confirm-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[70] hidden"></div>
+    <div id="drawn-prizes-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[70] hidden"></div>
+    <div id="donation-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[70] hidden"></div>
+    <div id="final-winners-modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-[70] hidden"></div>
+    <div id="changelog-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[70] hidden"></div>
+    <div id="load-options-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[70] hidden"></div>
+    <div id="settings-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[70] hidden"></div>
+    <div id="round-edit-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[70] hidden"></div>
+    <div id="next-round-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[70] hidden"></div>
+    <div id="card-generator-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[70] hidden"></div>
+    <div id="card-scanner-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[70] hidden"></div>
     <div id="sponsor-image-editor-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[70] hidden"></div>
 
     <!-- Rodapé para Impressão -->
