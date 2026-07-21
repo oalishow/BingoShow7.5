@@ -6654,6 +6654,23 @@ function showRoundEditModal(gameNumber: string) {
             onOfflineReady() {
                 console.log('App ready to work offline');
             },
+            onRegistered(swRegistration: ServiceWorkerRegistration | undefined) {
+                if (swRegistration) {
+                    // Verificação periódica a cada 1 hora
+                    setInterval(() => {
+                        swRegistration.update();
+                    }, 60 * 60 * 1000);
+                }
+            }
+        });
+
+        // Tentar verificar por atualizações quando o app ganha foco novamente (útil em mobile)
+        window.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                navigator.serviceWorker.ready.then(reg => {
+                    reg.update();
+                });
+            }
         });
 
         // --- PWA Installation Logic ---
