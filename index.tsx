@@ -388,6 +388,30 @@ let eventId = '';
                     console.log("Migrando logo customizado antigo para customLogoBase64");
                     loadedConfig.customLogoBase64 = loadedConfig.customLogo;
                 }
+                
+                if (loadedConfig.boardColor === undefined || loadedConfig.boardColor === '') {
+                    loadedConfig.boardColor = 'default';
+                }
+                
+                // Preserve local images since they are not synced to Firebase
+                if (this.state.appConfig) {
+                    if (this.state.appConfig.sponsorsByNumber && loadedConfig.sponsorsByNumber) {
+                        for (const num in loadedConfig.sponsorsByNumber) {
+                            if (this.state.appConfig.sponsorsByNumber[num]?.image && !loadedConfig.sponsorsByNumber[num].image) {
+                                loadedConfig.sponsorsByNumber[num].image = this.state.appConfig.sponsorsByNumber[num].image;
+                            }
+                        }
+                    }
+                    if (this.state.appConfig.globalSponsor?.image && loadedConfig.globalSponsor && !loadedConfig.globalSponsor.image) {
+                        loadedConfig.globalSponsor.image = this.state.appConfig.globalSponsor.image;
+                    }
+                    if (this.state.appConfig.customLogoBase64 && !loadedConfig.customLogoBase64) {
+                        loadedConfig.customLogoBase64 = this.state.appConfig.customLogoBase64;
+                    }
+                    if (this.state.appConfig.sponsorEditorReusableBg && !loadedConfig.sponsorEditorReusableBg) {
+                        loadedConfig.sponsorEditorReusableBg = this.state.appConfig.sponsorEditorReusableBg;
+                    }
+                }
 
                 this.state.appConfig = { ...this.state.appConfig, ...loadedConfig };
                 const loadedLabels = state.appLabels || {};
@@ -420,21 +444,61 @@ let eventId = '';
                        
                        const stateToStore = JSON.parse(JSON.stringify(this.getAppStateForSaving(true)));
                        
+                       if (stateToStore.appConfig) {
+                           if (stateToStore.appConfig.sponsorsByNumber) {
+                               for (const num in stateToStore.appConfig.sponsorsByNumber) {
+                                   if (stateToStore.appConfig.sponsorsByNumber[num].image) {
+                                        delete stateToStore.appConfig.sponsorsByNumber[num].image;
+                                   }
+                               }
+                           }
+                           if (stateToStore.appConfig.globalSponsor && stateToStore.appConfig.globalSponsor.image) {
+                               delete stateToStore.appConfig.globalSponsor.image;
+                           }
+                           if (stateToStore.appConfig.customLogoBase64) {
+                               delete stateToStore.appConfig.customLogoBase64;
+                           }
+                           if (stateToStore.appConfig.sponsorEditorReusableBg) {
+                               delete stateToStore.appConfig.sponsorEditorReusableBg;
+                           }
+                       }
+                       
                        eventData.fullStateJSON = JSON.stringify(stateToStore);
 
                        await setDoc(doc(db, "events", eventId), eventData, { merge: true });
 
-                       // Sync games
-                       const promises = Object.keys(this.state.gamesData).map(gameId => {
+                       // Sync games using a writeBatch and only syncing modified games
+                       if (!(this as any)._lastSyncedGames) (this as any)._lastSyncedGames = {};
+                       const gamesKeys = Object.keys(this.state.gamesData);
+                       const gamesToSync = gamesKeys.filter(gameId => {
                            const game = this.state.gamesData[gameId];
-                           return setDoc(doc(db, `events/${eventId}/games`, gameId), {
-                               name: game.name || `Rodada ${gameId}`,
-                               color: game.color || '',
-                               calledNumbers: game.calledNumbers,
-                               updatedAt: Date.now()
-                           }, { merge: true });
+                           const currentGameStr = JSON.stringify({
+                               name: game.name,
+                               color: game.color,
+                               calledNumbers: game.calledNumbers
+                           });
+                           if ((this as any)._lastSyncedGames[gameId] !== currentGameStr) {
+                               (this as any)._lastSyncedGames[gameId] = currentGameStr;
+                               return true;
+                           }
+                           return false;
                        });
-                       await Promise.all(promises);
+
+                       for (let i = 0; i < gamesToSync.length; i += 400) {
+                           const batch = writeBatch(db);
+                           const chunk = gamesToSync.slice(i, i + 400);
+                           for (const gameId of chunk) {
+                               const game = this.state.gamesData[gameId];
+                               const gameRef = doc(db, `events/${eventId}/games`, gameId);
+                               batch.set(gameRef, {
+                                   name: game.name || `Rodada ${gameId}`,
+                                   color: game.color || '',
+                                   calledNumbers: game.calledNumbers,
+                                   updatedAt: Date.now()
+                               }, { merge: true });
+                           }
+                           await batch.commit();
+                       }
                    } catch (e) {
                        console.error("Firebase sync error:", e);
                    }
@@ -460,6 +524,18 @@ let eventId = '';
                         if (globalSponsor.image && globalSponsor.image.startsWith('data:image')) {
                              imageSavePromises.push(saveSponsorImage('global', globalSponsor.image));
                              delete globalSponsor.image;
+                        }
+                    }
+                    if (stateToStore.appConfig && stateToStore.appConfig.customLogoBase64) {
+                        if (stateToStore.appConfig.customLogoBase64.startsWith('data:image')) {
+                             imageSavePromises.push(saveSponsorImage('customLogo', stateToStore.appConfig.customLogoBase64));
+                             delete stateToStore.appConfig.customLogoBase64;
+                        }
+                    }
+                    if (stateToStore.appConfig && stateToStore.appConfig.sponsorEditorReusableBg) {
+                        if (stateToStore.appConfig.sponsorEditorReusableBg.startsWith('data:image')) {
+                             imageSavePromises.push(saveSponsorImage('sponsorEditorBg', stateToStore.appConfig.sponsorEditorReusableBg));
+                             delete stateToStore.appConfig.sponsorEditorReusableBg;
                         }
                     }
                     await Promise.all(imageSavePromises);
@@ -549,7 +625,7 @@ let eventId = '';
         let winnerDisplayTimeout: any; 
 
         // --- Constants ---
-        const currentVersion = "7.6"; // Foco 100% Local
+        const currentVersion = "7.7";
         const buildInfo = "Build: 01/07/2026 - 12:24"; // Data e hora em formato DD/MM/AAAA 
         const DYNAMIC_LETTERS = ['B', 'I', 'N', 'G', 'O'];
         const DYNAMIC_LETTERS_AJUDE = ['A', 'J', 'U', 'D', 'E'];
@@ -1014,7 +1090,7 @@ function populateSettingsShortcutsTab() {
                              </div>`,
                 donation: `<div class="modal-content bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center"><h2 class="text-3xl font-black text-amber-400 mb-6">${appLabels.donationModalTitle}</h2><p class="text-slate-700 dark:text-slate-300 mb-4">${appLabels.donationModalDescription}</p><div class="space-y-6 text-left"><div class="text-center border-b border-gray-700 pb-6"><p class="text-lg font-bold text-gray-900 dark:text-white mb-4">${appLabels.donationModalPaypalLabel}</p><div class="flex justify-center"><form action="https://www.paypal.com/donate" method="post" target="_blank"><input type="hidden" name="hosted_button_id" value="FLVDNY994MNQS" /><input type="image" src="https://www.paypalobjects.com/pt_BR/BR/i/btn/btn_donateCC_LG.gif" border="0" name="submit" title="PayPal - The safer, easier way to pay online!" alt="Faça doações com o botão do PayPal" /></form></div></div><div class="pt-6"><p class="text-lg font-bold text-gray-900 dark:text-white mb-2">${appLabels.donationModalPixLabel}</p><div class="flex flex-col items-center"><div id="pix-key-display" contenteditable="false" class="bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white p-3 rounded-lg text-center text-sm font-mono select-all cursor-text max-w-full overflow-hidden whitespace-nowrap overflow-ellipsis"></div><button id="copy-pix-btn" class="mt-3 w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition-all">${appLabels.donationModalCopyButton}</button></div></div></div><button id="close-donation-btn" class="mt-8 bg-slate-600 hover:bg-slate-700 text-white font-bold py-2 px-6 rounded-full text-lg">${appLabels.modalCloseButton}</button></div>`,
                 finalWinners: `<div class="modal-content bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-5xl w-full text-center h-[95vh] flex flex-col justify-between">
-                                <h2 id="end-title" class="text-5xl font-black text-yellow-400 mb-4 flex-shrink-0">${appLabels.finalWinnersModalTitle}</h2>
+                                <h2 id="end-title" class="text-5xl font-black text-yellow-400 mb-4 flex-shrink-0 [-webkit-text-stroke:2px_#b45309] drop-shadow-md">${appLabels.finalWinnersModalTitle}</h2>
                                 <div id="end-winner-display" class="flex-grow flex items-center justify-center p-4 min-h-[150px]">
                                     <div id="current-winner-card" class="bg-gray-200 dark:bg-gray-700 p-8 rounded-xl shadow-2xl w-full max-w-2xl text-center transform scale-90 opacity-0 transition-all duration-500"></div>
                                 </div>
@@ -1115,6 +1191,7 @@ function populateSettingsShortcutsTab() {
                                     <input type="checkbox" id="online-sync-toggle" class="h-5 w-5 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500">
                                     <label for="online-sync-toggle" class="text-slate-800 dark:text-indigo-200 font-bold">Transmitir rodadas ao vivo para cartelas digitais</label>
                                 </div>
+                                <p class="text-xs text-red-600 dark:text-red-400 font-bold mb-4">⚠️ Aviso: Imagens e logos não são sincronizados na Nuvem. Para salvar as imagens em alta definição, salve o backup no computador (JSON).</p>
                                 <h3 class="text-lg font-bold text-slate-700 dark:text-slate-300 mb-2">🔒 Senha do Evento (Opcional)</h3>
                                 <p class="text-sm text-slate-600 dark:text-slate-400 mb-2">Para proteger seu evento, defina uma senha. Quem for carregar esse evento precisará digitá-la.</p>
                                 <input type="text" id="event-password-input" placeholder="Digite uma senha..." class="w-full bg-white dark:bg-gray-800 text-slate-800 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 focus:outline-none focus:border-indigo-500">
@@ -1725,11 +1802,23 @@ function showDrawnPrizesModal() {
     });
 }
 
-function showFinalWinnersModal() {
+function showFinalWinnersModal(isEndOfEvent: boolean = true) {
     if (finalConfettiInterval) clearInterval(finalConfettiInterval);
         if (typeof finalSponsorsInterval !== "undefined" && finalSponsorsInterval) clearInterval(finalSponsorsInterval);
     DOMElements.finalWinnersModal.innerHTML = getModalTemplates().finalWinners;
     DOMElements.finalWinnersModal.classList.remove('hidden');
+
+    const endTitle = document.getElementById('end-title');
+    if (endTitle && !isEndOfEvent) {
+        endTitle.textContent = 'Vencedores';
+    }
+
+    if (!isEndOfEvent) {
+        const generateProofBtn = document.getElementById('generate-proof-final-btn');
+        const donationBtn = document.getElementById('donation-final-btn');
+        if (generateProofBtn) generateProofBtn.classList.add('hidden');
+        if (donationBtn) donationBtn.classList.add('hidden');
+    }
 
     const allWinners = Object.values(appStore.state.gamesData)
         .flatMap(g => g.winners || [])
@@ -1808,8 +1897,8 @@ function showFinalWinnersModal() {
             const game = Object.values(appStore.state.gamesData).find(g => g.winners && g.winners.some((w:any) => w.id === winner.id));
             
             winnerDisplay.innerHTML = `
-                <p class="text-2xl font-bold text-sky-400 mb-2">${game ? game.name : 'Prêmio Especial'}</p>
-                <h3 class="text-5xl font-black text-amber-300">${winner.name}</h3>
+                <p class="text-2xl font-bold text-sky-400 mb-2 [-webkit-text-stroke:1px_#0284c7] drop-shadow-sm">${game ? game.name : 'Prêmio Especial'}</p>
+                <h3 class="text-5xl font-black text-amber-300 [-webkit-text-stroke:2px_#b45309] drop-shadow-md">${winner.name}</h3>
                 <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">${winner.prize}</p>
             `;
             
@@ -1825,8 +1914,9 @@ function showFinalWinnersModal() {
     winnerDisplayTimeout = setInterval(displayNextWinner, winnerDisplayDuration);
 
     const startConfetti = () => {
-        if (typeof confetti === 'function') {
-            confetti({
+        const c = getConfettiFn();
+        if (c) {
+            c({
                 particleCount: 2, angle: 270, spread: 55, origin: { x: Math.random(), y: 0 },
                 startVelocity: 15 + (Math.random() * 20), gravity: 0.7, ticks: 300, zIndex: 10000,
             });
@@ -2452,7 +2542,6 @@ function showSettingsModal() {
         btn.textContent = "Sincronizando...";
         btn.disabled = true;
         try {
-            const batchPromises = [];
             let currentBatch = writeBatch(db);
             let docCount = 0;
             const entries = Object.entries(appStore.state.cardsData);
@@ -2465,15 +2554,15 @@ function showSettingsModal() {
                 });
                 docCount++;
                 if (docCount === 500) {
-                    batchPromises.push(currentBatch.commit());
+                    await currentBatch.commit();
+                    await new Promise(r => setTimeout(r, 1000));
                     currentBatch = writeBatch(db);
                     docCount = 0;
                 }
             }
             if (docCount > 0) {
-                batchPromises.push(currentBatch.commit());
+                await currentBatch.commit();
             }
-            await Promise.all(batchPromises);
             btn.textContent = "Concluído!";
             setTimeout(() => { btn.textContent = originalText; btn.disabled = false; }, 3000);
         } catch(e) {
@@ -2653,11 +2742,15 @@ function applyBoardZoom(scale: number) {
 function applyDisplayZoom(scale: number) {
     const wrapper = DOMElements.currentNumberWrapper;
     const zoomValueEl = document.getElementById('display-zoom-value');
+    const fsZoomValueEl = document.getElementById('fs-display-zoom-value');
     if (wrapper) {
         wrapper.style.zoom = `${scale}%`;
     }
      if (zoomValueEl) {
         zoomValueEl.textContent = `${scale}%`;
+    }
+    if (fsZoomValueEl) {
+        fsZoomValueEl.textContent = `${scale}%`;
     }
 }
 
@@ -2782,6 +2875,8 @@ function applyAuctionZoom(scale: number) {
             } else {
                 document.documentElement.classList.remove('dark');
             }
+            const themeToggle = document.getElementById('theme-toggle') as HTMLInputElement;
+            if (themeToggle) themeToggle.checked = isDark;
             updateCurrentNumberDisplay();
         }
 
@@ -3004,6 +3099,12 @@ function applyAuctionZoom(scale: number) {
                             if (item.id === 'global' && appStore.state.appConfig.globalSponsor) {
                                 appStore.state.appConfig.globalSponsor.image = item.image;
                             }
+                            else if (item.id === 'customLogo') {
+                                appStore.state.appConfig.customLogoBase64 = item.image;
+                            }
+                            else if (item.id === 'sponsorEditorBg') {
+                                appStore.state.appConfig.sponsorEditorReusableBg = item.image;
+                            }
                             else if (appStore.state.appConfig.sponsorsByNumber[item.id]) {
                                 appStore.state.appConfig.sponsorsByNumber[item.id].image = item.image;
                             }
@@ -3017,8 +3118,14 @@ function applyAuctionZoom(scale: number) {
                 if (memoryImagesStore['global'] && appStore.state.appConfig.globalSponsor) {
                     appStore.state.appConfig.globalSponsor.image = memoryImagesStore['global'];
                 }
+                if (memoryImagesStore['customLogo']) {
+                    appStore.state.appConfig.customLogoBase64 = memoryImagesStore['customLogo'];
+                }
+                if (memoryImagesStore['sponsorEditorBg']) {
+                    appStore.state.appConfig.sponsorEditorReusableBg = memoryImagesStore['sponsorEditorBg'];
+                }
                 for (const num in memoryImagesStore) {
-                    if (num !== 'global' && appStore.state.appConfig.sponsorsByNumber[num]) {
+                    if (num !== 'global' && num !== 'customLogo' && num !== 'sponsorEditorBg' && appStore.state.appConfig.sponsorsByNumber[num]) {
                         appStore.state.appConfig.sponsorsByNumber[num].image = memoryImagesStore[num];
                     }
                 }
@@ -3770,17 +3877,18 @@ function applyAuctionZoom(scale: number) {
             nameEl.textContent = game.name || `Rodada ${gameNumber}`;
             prizesEl.innerHTML = '';
             
-            const createPrizeEl = (label: string, value: string) => {
+            const createPrizeEl = (label: string, value: string, bingoType: string) => {
                 if (!value) return null;
+                const isWon = game.winners && game.winners.some((w: any) => w.bingoType === bingoType);
                 const p = document.createElement('p');
-                p.className = 'text-2xl sm:text-3xl lg:text-4xl leading-tight flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-4 mb-2';
-                p.innerHTML = `<span class="font-bold text-slate-500 dark:text-slate-400 text-sm sm:text-base uppercase tracking-widest">${label}:</span> <span class="text-amber-500 dark:text-amber-400 font-black text-stroke-black drop-shadow-md break-words text-center">${value}</span>`;
+                p.className = `text-2xl sm:text-3xl lg:text-4xl leading-tight flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-4 mb-2 ${isWon ? 'opacity-50 grayscale' : ''}`;
+                p.innerHTML = `<span class="font-bold text-slate-500 dark:text-slate-400 text-sm sm:text-base uppercase tracking-widest ${isWon ? 'line-through' : ''}">${label}:</span> <span class="text-amber-500 dark:text-amber-400 font-black text-stroke-black drop-shadow-md break-words text-center ${isWon ? 'line-through' : ''}">${value}</span>${isWon ? '<span class="ml-2 text-green-500 text-2xl drop-shadow-sm">✓</span>' : ''}`;
                 return p;
             };
 
-            const prize1 = createPrizeEl(appLabels.prize1Label, game.prizes.prize1);
-            const prize2 = createPrizeEl(appLabels.prize2Label, game.prizes.prize2);
-            const prize3 = createPrizeEl(appLabels.prize3Label, game.prizes.prize3);
+            const prize1 = createPrizeEl(appLabels.prize1Label, game.prizes.prize1, 'prize1');
+            const prize2 = createPrizeEl(appLabels.prize2Label, game.prizes.prize2, 'prize2');
+            const prize3 = createPrizeEl(appLabels.prize3Label, game.prizes.prize3, 'prize3');
             if (prize1) prizesEl.appendChild(prize1);
             if (prize2) prizesEl.appendChild(prize2);
             if (prize3) prizesEl.appendChild(prize3);
@@ -3860,7 +3968,7 @@ function applyAuctionZoom(scale: number) {
                 columnWrapper.className = 'col-span-2 flex flex-col items-center';
                 
                 const headerEl = document.createElement('div');
-                headerEl.className = `font-black text-sky-400 mb-4 ${headerSizeClass}`;
+                headerEl.className = `font-black text-sky-400 mb-4 ${headerSizeClass} [-webkit-text-stroke:2px_#0284c7] drop-shadow-md`;
                 headerEl.textContent = letter;
                 columnWrapper.appendChild(headerEl);
 
@@ -3876,7 +3984,7 @@ function applyAuctionZoom(scale: number) {
                     cell.textContent = i.toString();
                     
                     let cellClasses = `bingo-cell flex items-center justify-center font-black rounded-full transition-all duration-300 ${cellSizeClass}`;
-                    if (appConfig.boardColor !== 'default') {
+                    if (appConfig.boardColor && appConfig.boardColor !== 'default') {
                         cell.style.backgroundColor = appConfig.boardColor;
                         cellClasses += isLightColor(appConfig.boardColor) ? ' text-gray-900' : ' text-white';
                     } else {
@@ -3919,7 +4027,7 @@ function applyAuctionZoom(scale: number) {
                     if (applyCustomColor && activeRoundColor) {
                         cell.style.backgroundColor = hexToRgba(activeRoundColor, 0.25)!; 
                         cell.classList.add('text-slate-800', 'dark:text-slate-200');
-                    } else if (applyCustomColor && appConfig.boardColor !== 'default') {
+                    } else if (appConfig.boardColor && appConfig.boardColor !== 'default') {
                         cell.style.backgroundColor = appConfig.boardColor;
                         cell.classList.add(isLightColor(appConfig.boardColor) ? 'text-gray-900' : 'text-white');
                     } else {
@@ -4144,7 +4252,7 @@ function applyAuctionZoom(scale: number) {
 
                 const isDarkTheme = document.documentElement.classList.contains('dark');
                 const defaultBg = isDarkTheme ? '#1e293b' : '#f1f5f9';
-                const bgColor = roundColor || (appConfig.boardColor !== 'default' ? appConfig.boardColor : defaultBg);
+                const bgColor = roundColor || (appConfig.boardColor && appConfig.boardColor !== 'default' ? appConfig.boardColor : defaultBg);
 
                 currentNumberEl.style.backgroundColor = bgColor;
                 currentNumberEl.style.color = mainColor;
@@ -4271,6 +4379,35 @@ function applyAuctionZoom(scale: number) {
             prize1Btn.disabled = !game.prizes.prize1;
             prize2Btn.disabled = !game.prizes.prize2;
             prize3Btn.disabled = !game.prizes.prize3;
+            
+            const wonPrize1 = game.winners && game.winners.some((w: any) => w.bingoType === 'prize1');
+            const wonPrize2 = game.winners && game.winners.some((w: any) => w.bingoType === 'prize2');
+            const wonPrize3 = game.winners && game.winners.some((w: any) => w.bingoType === 'prize3');
+
+            prize1Btn.disabled = !game.prizes.prize1 || wonPrize1;
+            prize2Btn.disabled = !game.prizes.prize2 || wonPrize2;
+            prize3Btn.disabled = !game.prizes.prize3 || wonPrize3;
+            
+            if (!game.prizes.prize1) prize1Btn.style.display = 'none';
+            else {
+                prize1Btn.style.display = 'block';
+                if (wonPrize1) prize1Btn.innerHTML = `1: ${appLabels.prize1Label} (Já Sorteado)`;
+                else prize1Btn.innerHTML = `1: ${appLabels.prize1Label}`;
+            }
+            
+            if (!game.prizes.prize2) prize2Btn.style.display = 'none';
+            else {
+                prize2Btn.style.display = 'block';
+                if (wonPrize2) prize2Btn.innerHTML = `2: ${appLabels.prize2Label} (Já Sorteado)`;
+                else prize2Btn.innerHTML = `2: ${appLabels.prize2Label}`;
+            }
+            
+            if (!game.prizes.prize3) prize3Btn.style.display = 'none';
+            else {
+                prize3Btn.style.display = 'block';
+                if (wonPrize3) prize3Btn.innerHTML = `3: ${appLabels.prize3Label} (Já Sorteado)`;
+                else prize3Btn.innerHTML = `3: ${appLabels.prize3Label}`;
+            }
         }
         
         function areAllPrizesWon(game: any) {
@@ -4747,12 +4884,14 @@ function applyAuctionZoom(scale: number) {
                 // --- NOVO: Efeitos de Brilho e Confete Contínuo ---
                 prizeDisplay.style.boxShadow = `0 0 50px 20px ${roundColor}`;
                 
-                if (typeof confetti === 'function') {
+                const c = getConfettiFn();
+                if (c) {
                     // Primeiro estouro grande
-                    confetti({
+                    c({
                         particleCount: 150,
                         spread: 100,
-                        origin: { y: 0.6 }
+                        origin: { y: 0.6 },
+                        zIndex: 10000
                     });
 
                     // Loop de confete contínuo
@@ -4762,19 +4901,21 @@ function applyAuctionZoom(scale: number) {
                     const frame = () => {
                         if (Date.now() > end || displayContainer.classList.contains('hidden')) return;
 
-                        confetti({
+                        c({
                             particleCount: 2,
                             angle: 60,
                             spread: 55,
                             origin: { x: 0 },
-                            colors: colors
+                            colors: colors,
+                            zIndex: 10000
                         });
-                        confetti({
+                        c({
                             particleCount: 2,
                             angle: 120,
                             spread: 55,
                             origin: { x: 1 },
-                            colors: colors
+                            colors: colors,
+                            zIndex: 10000
                         });
 
                         requestAnimationFrame(frame);
@@ -5060,6 +5201,7 @@ function showRoundEditModal(gameNumber: string) {
                             docCount++;
                             if (docCount === 500) {
                                 await currentBatch.commit();
+                                await new Promise(r => setTimeout(r, 1000));
                                 currentBatch = writeBatch(db);
                                 docCount = 0;
                             }
@@ -5566,7 +5708,7 @@ function showRoundEditModal(gameNumber: string) {
             
             document.getElementById('prize-draw-random-btn')!.addEventListener('click', drawRandomPrize);
             DOMElements.shareBtn.addEventListener('click', () => showProofOptionsModal());
-            DOMElements.endEventBtn.addEventListener('click', showFinalWinnersModal);
+            DOMElements.endEventBtn.addEventListener('click', () => showFinalWinnersModal(true));
             DOMElements.resetEventBtn.addEventListener('click', () => {
                 DOMElements.resetConfirmModal.innerHTML = getModalTemplates().resetConfirm;
                 DOMElements.resetConfirmModal.classList.remove('hidden');
@@ -5616,20 +5758,6 @@ function showRoundEditModal(gameNumber: string) {
                 });
             }
 
-            const fullScreenPrizeBtn = document.getElementById('fullscreen-prize-btn');
-            if (fullScreenPrizeBtn) {
-                fullScreenPrizeBtn.addEventListener('click', () => {
-                    const section = document.getElementById('draw-and-prize-section');
-                    if (section) {
-                        if (!document.fullscreenElement) {
-                            section.requestFullscreen().catch(err => showAlert(`Erro: ${err.message}`));
-                        } else {
-                            document.exitFullscreen();
-                        }
-                    }
-                });
-            }
-
             const fullScreenBoardBtn = document.getElementById('fullscreen-board-btn');
             if (fullScreenBoardBtn) {
                 fullScreenBoardBtn.addEventListener('click', () => {
@@ -5646,11 +5774,28 @@ function showRoundEditModal(gameNumber: string) {
                 });
             }
             
+            const showWinnersBoardBtn = document.getElementById('show-winners-board-btn');
+            if (showWinnersBoardBtn) {
+                showWinnersBoardBtn.addEventListener('click', () => {
+                    showFinalWinnersModal(false);
+                });
+            }
+            
             // Listen to fullscreen changes to style the section properly
             document.addEventListener('fullscreenchange', () => {
                 const fsControls = document.getElementById('fullscreen-controls');
                 const htmlElement = document.documentElement;
                 const isDark = htmlElement.classList.contains('dark');
+                
+                const showWinnersBtn = document.getElementById('show-winners-board-btn');
+                
+                if (showWinnersBtn) {
+                    if (document.fullscreenElement && document.fullscreenElement.id === 'board-section') {
+                        showWinnersBtn.classList.remove('hidden');
+                    } else {
+                        showWinnersBtn.classList.add('hidden');
+                    }
+                }
                 
                 ['board-section', 'auction-section', 'draw-and-prize-section'].forEach(id => {
                     const section = document.getElementById(id);
@@ -5661,6 +5806,16 @@ function showRoundEditModal(gameNumber: string) {
                         section.classList.add('overflow-y-auto');
                         if (id === 'draw-and-prize-section') {
                              section.classList.add('p-4');
+                             const fsPrizeControls = document.getElementById('fs-prize-controls');
+                             if (fsPrizeControls) {
+                                 fsPrizeControls.classList.remove('hidden');
+                                 fsPrizeControls.classList.remove('flex-row');
+                                 fsPrizeControls.classList.add('flex');
+                             }
+                             const fsDisplayZoomSlider = document.getElementById('fs-display-zoom-slider') as HTMLInputElement;
+                             if (fsDisplayZoomSlider) fsDisplayZoomSlider.value = appStore.state.appConfig.displayScale.toString();
+                             const fsDisplayZoomValue = document.getElementById('fs-display-zoom-value');
+                             if (fsDisplayZoomValue) fsDisplayZoomValue.textContent = appStore.state.appConfig.displayScale.toString();
                         }
                         
                         document.querySelectorAll('.fixed.inset-0').forEach(el => {
@@ -5712,9 +5867,13 @@ function showRoundEditModal(gameNumber: string) {
                         section.classList.remove('overflow-y-auto');
                         if (id === 'draw-and-prize-section') {
                              section.classList.remove('p-4');
+                             const fsPrizeControls = document.getElementById('fs-prize-controls');
+                             if (fsPrizeControls) {
+                                 fsPrizeControls.classList.add('hidden');
+                             }
                         }
                         
-                        ['floating-number-modal', 'custom-alert-modal', 'congrats-modal', 'winner-modal', 'sponsor-display-modal', 'verification-modal', 'event-break-modal', 'round-edit-modal', 'spinning-wheel-modal', 'next-round-modal'].forEach(modalId => {
+                        ['floating-number-modal', 'custom-alert-modal', 'congrats-modal', 'winner-modal', 'sponsor-display-modal', 'verification-modal', 'event-break-modal', 'round-edit-modal', 'spinning-wheel-modal', 'next-round-modal', 'final-winners-modal'].forEach(modalId => {
                              const el = document.getElementById(modalId);
                              if (el) document.body.appendChild(el);
                         });
@@ -5884,12 +6043,26 @@ function showRoundEditModal(gameNumber: string) {
 
 
             
-            displayZoomSlider.addEventListener('input', (e) => {
-                const scale = parseInt((e.target as HTMLInputElement).value);
-                appStore.state.appConfig.displayScale = scale;
-                applyDisplayZoom(scale);
-            });
-             displayZoomSlider.addEventListener('change', () => appStore.debouncedSave());
+            if (displayZoomSlider) {
+                displayZoomSlider.addEventListener('input', (e) => {
+                    const scale = parseInt((e.target as HTMLInputElement).value);
+                    appStore.state.appConfig.displayScale = scale;
+                    applyDisplayZoom(scale);
+                });
+                displayZoomSlider.addEventListener('change', () => appStore.debouncedSave());
+            }
+            
+            const fsDisplayZoomSlider = document.getElementById('fs-display-zoom-slider') as HTMLInputElement;
+            if (fsDisplayZoomSlider) {
+                fsDisplayZoomSlider.addEventListener('input', (e) => {
+                    const scale = parseInt((e.target as HTMLInputElement).value);
+                    appStore.state.appConfig.displayScale = scale;
+                    applyDisplayZoom(scale);
+                    const displayZoomSlider = document.getElementById('display-zoom-slider') as HTMLInputElement;
+                    if (displayZoomSlider) displayZoomSlider.value = scale.toString();
+                });
+                fsDisplayZoomSlider.addEventListener('change', () => appStore.debouncedSave());
+            }
 
             const auctionZoomSlider = document.getElementById('auction-zoom-slider') as HTMLInputElement;
             if (auctionZoomSlider) {
@@ -6388,10 +6561,10 @@ function showRoundEditModal(gameNumber: string) {
                      globalStatusEl.classList.remove('hidden');
                      if (eventId) {
                          globalStatusEl.className = 'flex items-center justify-center p-2 rounded-full shadow-lg bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-sm font-bold font-mono text-center px-6 border-2 border-green-400 dark:border-green-600 cursor-pointer hover:bg-green-200 dark:hover:bg-green-800 transition-colors';
-                         globalStatusEl.innerHTML = `✅ Modo Online <span class="ml-1 text-xs opacity-75">(Clique p/ Copiar ID)</span>`;
+                         globalStatusEl.innerHTML = `✅ Modo Online`;
                          globalStatusEl.onclick = () => {
                              navigator.clipboard.writeText(eventId).then(() => {
-                                 showAlert(`ID do Evento copiado para a área de transferência:\n${eventId}`);
+                                 showAlert(`ID do Evento copiado para a área de transferência:\n${eventId}\n\nAtenção: Apenas os jogos e configurações são exportadas para a Nuvem. Imagens de patrocinadores e logos não são sincronizados na Nuvem.\n\nPara exportar tudo em alta definição (incluindo imagens), vá em "Opções do Programa" e salve o Backup (JSON) no seu computador!`);
                              }).catch(() => {
                                  showAlert(`O ID do Evento é:\n${eventId}`);
                              });
