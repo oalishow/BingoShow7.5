@@ -442,7 +442,7 @@ let eventId = '';
                            createdAt: this.state.appConfig.createdAt || Date.now(),
                        };
                        
-                       const stateToStore = JSON.parse(JSON.stringify(this.getAppStateForSaving(true)));
+                       const stateToStore = JSON.parse(JSON.stringify(this.getAppStateForSaving(false)));
                        
                        if (stateToStore.appConfig) {
                            if (stateToStore.appConfig.sponsorsByNumber) {
