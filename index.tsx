@@ -432,6 +432,11 @@ let eventId = '';
                 if (!this.state.appConfig.onlineSyncEnabled || !eventId || !firebaseUser) return;
                 clearTimeout((this as any).firebaseSyncTimeout);
                 (this as any).firebaseSyncTimeout = setTimeout(async () => {
+                   if ((this as any).isSyncingFirebase) {
+                       this.debouncedFirebaseSync();
+                       return;
+                   }
+                   (this as any).isSyncingFirebase = true;
                    try {
                        const eventData: any = {
                            hostId: firebaseUser.uid,
@@ -511,6 +516,8 @@ let eventId = '';
                        }
                    } catch (e) {
                        console.error("Firebase sync error:", e);
+                   } finally {
+                       (this as any).isSyncingFirebase = false;
                    }
                 }, 2000);
             },
@@ -6640,15 +6647,21 @@ function showRoundEditModal(gameNumber: string) {
                 `;
                 document.body.appendChild(updateContainer);
                 document.getElementById('pwa-auto-update-btn')!.addEventListener('click', async () => {
-                    updateContainer.remove();
+                    const btn = document.getElementById('pwa-auto-update-btn') as HTMLButtonElement;
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.textContent = 'Atualizando...';
+                    }
                     if (updateSW) {
                         try {
                             await updateSW(true);
                         } catch (e) {
                             console.error('Failed to update SW:', e);
+                            window.location.reload();
                         }
+                    } else {
+                        window.location.reload();
                     }
-                    window.location.reload();
                 });
             },
             onOfflineReady() {
@@ -6666,7 +6679,7 @@ function showRoundEditModal(gameNumber: string) {
 
         // Tentar verificar por atualizações quando o app ganha foco novamente (útil em mobile)
         window.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') {
+            if (document.visibilityState === 'visible' && 'serviceWorker' in navigator) {
                 navigator.serviceWorker.ready.then(reg => {
                     reg.update();
                 });
