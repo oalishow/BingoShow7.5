@@ -6633,7 +6633,9 @@ function showRoundEditModal(gameNumber: string) {
         // --- PWA Auto Update Logic ---
         const updateSW = registerSW({
             onNeedRefresh() {
+                if (document.getElementById('pwa-update-container')) return;
                 const updateContainer = document.createElement('div');
+                updateContainer.id = 'pwa-update-container';
                 updateContainer.innerHTML = `
                     <div class="fixed bottom-4 right-4 z-50 bg-indigo-600 text-white px-6 py-4 rounded-xl shadow-2xl flex flex-col sm:flex-row items-center gap-4 transition-all duration-500 hover:scale-105 border-2 border-indigo-400">
                         <div>
@@ -6657,11 +6659,9 @@ function showRoundEditModal(gameNumber: string) {
                             await updateSW(true);
                         } catch (e) {
                             console.error('Failed to update SW:', e);
-                            window.location.reload();
                         }
-                    } else {
-                        window.location.reload();
                     }
+                    window.location.reload();
                 });
             },
             onOfflineReady() {
