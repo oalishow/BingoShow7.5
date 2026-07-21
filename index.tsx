@@ -7,7 +7,7 @@ import jsQR from 'jsqr';
 import { registerSW } from 'virtual:pwa-register';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, doc, setDoc, onSnapshot, collection, getDoc, getDocs, writeBatch, enableIndexedDbPersistence } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, onSnapshot, collection, getDoc, getDocs, writeBatch, clearIndexedDbPersistence } from 'firebase/firestore';
 import firebaseConfig from './firebase-applet-config.json';
 import { sounds } from './audio';
 
@@ -15,15 +15,7 @@ const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
 const db = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId);
 
-enableIndexedDbPersistence(db).catch((err) => {
-    if (err.code == 'failed-precondition') {
-        // Multiple tabs open
-        console.warn("Multiple tabs open, persistence can only be enabled in one tab at a a time.");
-    } else if (err.code == 'unimplemented') {
-        // The current browser does not support all of the features required to enable persistence
-        console.warn("The current browser does not support offline persistence.");
-    }
-});
+clearIndexedDbPersistence(db).catch(() => {});
 let firebaseUser: any = null;
 let syncEnabled = false;
 let eventId = '';
