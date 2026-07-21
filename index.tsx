@@ -465,7 +465,12 @@ let eventId = '';
                        
                        eventData.fullStateJSON = JSON.stringify(stateToStore);
 
-                       await setDoc(doc(db, "events", eventId), eventData, { merge: true });
+                       const stateStr = JSON.stringify(stateToStore);
+                       let mainStateChanged = false;
+                       if ((this as any)._lastSyncedState !== stateStr) {
+                           (this as any)._lastSyncedState = stateStr;
+                           mainStateChanged = true;
+                       }
 
                        // Sync games using a writeBatch and only syncing modified games
                        if (!(this as any)._lastSyncedGames) (this as any)._lastSyncedGames = {};
@@ -483,10 +488,14 @@ let eventId = '';
                            }
                            return false;
                        });
+                       
+                       if (mainStateChanged) {
+                           await setDoc(doc(db, "events", eventId), eventData, { merge: true });
+                       }
 
-                       for (let i = 0; i < gamesToSync.length; i += 400) {
+                       for (let i = 0; i < gamesToSync.length; i += 100) {
                            const batch = writeBatch(db);
-                           const chunk = gamesToSync.slice(i, i + 400);
+                           const chunk = gamesToSync.slice(i, i + 100);
                            for (const gameId of chunk) {
                                const game = this.state.gamesData[gameId];
                                const gameRef = doc(db, `events/${eventId}/games`, gameId);
@@ -498,6 +507,7 @@ let eventId = '';
                                }, { merge: true });
                            }
                            await batch.commit();
+                           if (i + 100 < gamesToSync.length) await new Promise(r => setTimeout(r, 2000));
                        }
                    } catch (e) {
                        console.error("Firebase sync error:", e);
@@ -2553,9 +2563,9 @@ function showSettingsModal() {
                     numbersString: JSON.stringify(cardData.numbers)
                 });
                 docCount++;
-                if (docCount === 500) {
+                if (docCount === 100) {
                     await currentBatch.commit();
-                    await new Promise(r => setTimeout(r, 1000));
+                    await new Promise(r => setTimeout(r, 2000));
                     currentBatch = writeBatch(db);
                     docCount = 0;
                 }
@@ -5199,9 +5209,9 @@ function showRoundEditModal(gameNumber: string) {
                                 numbersString: JSON.stringify(cardData.numbers)
                             });
                             docCount++;
-                            if (docCount === 500) {
+                            if (docCount === 100) {
                                 await currentBatch.commit();
-                                await new Promise(r => setTimeout(r, 1000));
+                                await new Promise(r => setTimeout(r, 2000));
                                 currentBatch = writeBatch(db);
                                 docCount = 0;
                             }
