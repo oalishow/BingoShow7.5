@@ -1644,7 +1644,16 @@ function generateProof(selectedGameKeys: string[], signerName: string = '') {
         proofWindow.document.close();
         proofWindow.print();
     } else {
-        showAlert("Não foi possível abrir a janela de impressão. Verifique se o seu navegador está bloqueando pop-ups.");
+        const blob = new Blob([proofContent], { type: 'text/html;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Prova_Bingo_${new Date().getTime()}.html`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showAlert("O pop-up foi bloqueado, então o arquivo HTML da prova foi baixado no seu dispositivo. Abra-o para imprimir ou compartilhar.");
     }
 }
 
@@ -5134,17 +5143,14 @@ function showRoundEditModal(gameNumber: string) {
             await new Promise(res => setTimeout(res, 100));
 
             const printWindow = window.open('', '_blank');
-            if (!printWindow) {
-                showAlert('Não foi possível abrir a aba de impressão. Verifique se o seu navegador está bloqueando pop-ups.');
-                if (printBtn) {
-                    printBtn.innerHTML = "Gerar e Imprimir";
-                    printBtn.disabled = false;
-                }
-                return;
-            }
+            let hasPrintWindow = !!printWindow;
             
-            printWindow.document.write('<html><head><title>Preparando...</title></head><body style="font-family: sans-serif; text-align: center; padding: 50px;"><h2>Gerando ' + quantity + ' cartelas...</h2></body></html>');
-            showAlert("Preparando PDF na nova aba. Aguarde...");
+            if (hasPrintWindow) {
+                printWindow!.document.write('<html><head><title>Preparando...</title></head><body style="font-family: sans-serif; text-align: center; padding: 50px;"><h2>Gerando ' + quantity + ' cartelas...</h2></body></html>');
+            } else {
+                showAlert("Gerando cartelas em segundo plano (pop-ups bloqueados). Um arquivo HTML será baixado ao final.");
+            }
+            if (hasPrintWindow) showAlert("Preparando PDF na nova aba. Aguarde...");
 
             // Generating raw data
             const resetSeriesInput = document.getElementById('card-reset-series') as HTMLInputElement | null;
@@ -5228,8 +5234,7 @@ function showRoundEditModal(gameNumber: string) {
             appStore.debouncedSave();
 
             // Generation HTML
-            printWindow.document.open();
-            printWindow.document.write(`
+            let fullHtmlContent = `
                 <html>
                     <head>
                         <title>${title}</title>
@@ -5244,7 +5249,11 @@ function showRoundEditModal(gameNumber: string) {
                     </head>
                     <body>
                         <div class="w-full flex flex-col items-center">
-            `);
+            `;
+            if (hasPrintWindow) {
+                printWindow!.document.open();
+                printWindow!.document.write(fullHtmlContent);
+            }
 
             const logoData = appStore.state.appConfig.customLogoBase64 || '';
             const useLogo = !!logoData;
@@ -5340,7 +5349,7 @@ function showRoundEditModal(gameNumber: string) {
 
                 const resolvedBatchHTML = await Promise.all(batchPromises);
                 
-                printWindow.document.write(`
+                const chunkHtml = `
                     <div class="bg-white border-[4px] border-black flex flex-col w-full h-[287mm] max-w-[210mm] mx-auto p-1 box-border print:p-0" style="page-break-after: always; overflow: hidden;">
                         <!-- MASTER HEADER -->
                         <div class="border-[2px] border-black mb-1 flex flex-col flex-shrink-0">
@@ -5385,12 +5394,14 @@ function showRoundEditModal(gameNumber: string) {
                             </div>
                         </div>
                     </div>
-                `);
+                `;
+                fullHtmlContent += chunkHtml;
+                if (hasPrintWindow) printWindow!.document.write(chunkHtml);
 
                 if (uuids.length > 200) await new Promise(res => setTimeout(res, 5));
             }
 
-            printWindow.document.write(`
+            const endHtml = `
                         </div>
                         <script>
                             setTimeout(() => {
@@ -5400,8 +5411,23 @@ function showRoundEditModal(gameNumber: string) {
                         </script>
                     </body>
                 </html>
-            `);
-            printWindow.document.close();
+            `;
+            fullHtmlContent += endHtml;
+            if (hasPrintWindow) {
+                printWindow!.document.write(endHtml);
+                printWindow!.document.close();
+            } else {
+                const blob = new Blob([fullHtmlContent], { type: 'text/html;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Cartelas_${title}_${new Date().getTime()}.html`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showAlert("O pop-up foi bloqueado. As cartelas foram baixadas como um arquivo HTML para o seu dispositivo.");
+            }
             
             // Auto close modal
             DOMElements.cardGeneratorModal.classList.add('hidden');
