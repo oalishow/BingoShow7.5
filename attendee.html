@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bingo Show - Painel do Público</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    
+    <style>
+        :root {
+            --color-bg: #f8fafc;
+            --color-card: #ffffff;
+            --color-border: #e2e8f0;
+            --color-text: #0ea5e9;
+        }
+        .dark {
+            --color-bg: #060a16;
+            --color-card: #0d1527;
+            --color-border: #1a2744;
+            --color-text: #38bdf8;
+        }
+    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                bg: 'var(--color-bg)',
+                card: 'var(--color-card)',
+                border: 'var(--color-border)',
+                text: 'var(--color-text)'
+              }
+            },
+            animation: {
+              'bounce-in': 'bounceIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) both',
+              'fade-in': 'fadeIn 0.5s ease-out both',
+            },
+            keyframes: {
+              bounceIn: {
+                '0%': { transform: 'scale(0)', opacity: '0' },
+                '50%': { transform: 'scale(1.1)' },
+                '100%': { transform: 'scale(1)', opacity: '1' },
+              },
+              fadeIn: {
+                '0%': { opacity: '0', transform: 'translateY(10px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
+              }
+            }
+          }
+        }
+      }
+    </script>
+</head>
+<body class="bg-brand-bg text-slate-800 dark:text-white font-sans min-h-screen flex flex-col p-2 sm:p-4">
+    <div class="w-full flex-1 flex flex-col max-w-lg mx-auto gap-3 sm:gap-4">
+        
+        <canvas id="confetti-canvas" class="fixed inset-0 w-full h-full pointer-events-none z-50"></canvas>
+        <div id="attendee-status-banner" class="w-full p-4 text-center text-sm font-bold bg-yellow-900/50 text-yellow-200 rounded-xl shadow-sm border border-yellow-700/50 animate-pulse">⏳ Conectando ao painel do evento...</div>
+        
+        
+        <div id="attendee-pending-overlay" class="fixed inset-0 bg-brand-bg/90 backdrop-blur-sm z-[80] hidden flex-col items-center justify-center p-4 text-center">
+            <div id="pending-overlay-content" class="animate-bounce-in bg-brand-card rounded-full border-8 border-brand-border shadow-[0_0_50px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center w-64 h-64 sm:w-80 sm:h-80 relative overflow-hidden ring-4 ring-brand-text/50">
+                <div class="animate-pulse flex flex-col items-center justify-center w-full h-full"><div id="pending-overlay-msg" class="text-8xl sm:text-9xl font-black text-brand-text drop-shadow-md"></div></div>
+            </div>
+        </div>
+        
+        <div id="attendee-bingo-overlay" class="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[110] hidden flex-col items-center justify-center p-4 text-center">
+            <div id="bingo-overlay-content" class="animate-bounce-in bg-white dark:bg-slate-800 p-8 sm:p-12 rounded-3xl border-4 border-yellow-400 shadow-[0_0_50px_rgba(250,204,21,0.5)] flex flex-col items-center">
+                <div class="text-6xl sm:text-8xl mb-6 animate-pulse">🎉</div>
+                <h2 id="bingo-overlay-title" class="text-5xl sm:text-7xl font-black uppercase tracking-widest text-yellow-400 mb-4 drop-shadow-md">BINGO!</h2>
+                <div id="bingo-overlay-msg" class="text-xl sm:text-3xl text-slate-800 dark:text-white"></div>
+            </div>
+        </div>
+
+        <div id="attendee-overlay" class="fixed inset-0 bg-brand-bg/90 backdrop-blur-sm z-[90] hidden flex-col items-center justify-center p-4 text-center">
+            <div id="overlay-content" class="animate-bounce-in bg-brand-card p-6 sm:p-8 rounded-2xl border border-brand-border shadow-2xl flex flex-col items-center">
+                <div id="overlay-icon" class="text-4xl sm:text-6xl mb-4"></div>
+                <h2 id="overlay-title" class="text-xl sm:text-2xl font-black uppercase tracking-widest text-brand-text mb-2"></h2>
+                <p id="overlay-msg" class="text-sm sm:text-base text-slate-700 dark:text-slate-300">
+            </div>
+        </div>
+        
+        
+        
+        <button id="show-winners-attendee-btn" class="absolute top-2 right-12 p-2 text-amber-500 hover:text-amber-600 transition-colors h-8 w-8 flex items-center justify-center rounded-full bg-brand-card shadow border border-brand-border z-50" title="Ver Vencedores">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>
+        </button>
+
+        <button id="theme-toggle-attendee-btn" class="absolute top-2 right-2 p-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors h-8 w-8 flex items-center justify-center rounded-full bg-brand-card shadow border border-brand-border z-50" title="Alternar Modo Claro/Escuro">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 dark:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 hidden dark:block" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+        </button>
+
+        <div id="attendee-content" class="hidden flex-col gap-3 sm:gap-4 w-full animate-fade-in">
+            
+            <!-- Header App Name and Logo -->
+            <div class="text-center mb-1 flex flex-col items-center justify-center">
+                <img id="attendee-logo" src="" alt="Logo" class="h-16 w-auto hidden object-contain mb-2 drop-shadow-md" />
+                <h1 id="attendee-app-name" class="text-2xl font-black uppercase tracking-tight hidden drop-shadow-sm"></h1>
+                <h2 id="attendee-game-name" class="text-sm font-bold text-slate-400 uppercase mt-1 tracking-widest drop-shadow-sm"></h2>
+                
+                <!-- Prêmios -->
+                <div id="attendee-prizes" class="mt-2 text-sm sm:text-base font-bold text-slate-700 dark:text-slate-200 hidden bg-brand-card/50 px-4 py-2 rounded-lg border border-brand-border backdrop-blur-sm"></div>
+            </div>
+
+            <!-- Último Sorteado -->
+            <div id="attendee-last-card" class="bg-brand-card border border-brand-border rounded-xl p-4 shadow-lg flex flex-col items-center justify-center relative overflow-hidden transition-colors duration-500 min-h-[140px] sm:min-h-[180px]">
+                <div class="absolute inset-0 bg-white/5 hidden" id="attendee-last-bg"></div>
+                <span id="attendee-last-title" class="absolute top-3 left-3 text-[10px] sm:text-xs font-black text-brand-text uppercase tracking-widest z-10">Último Sorteado</span>
+                
+                <!-- Bola -->
+                <div id="attendee-last-number-ball" class="w-20 h-20 sm:w-28 sm:h-28 rounded-full flex items-center justify-center shadow-2xl border-[4px] border-brand-text transition-colors duration-500 relative overflow-hidden bg-brand-bg my-2">
+                    <div class="absolute inset-0 rounded-full opacity-40 bg-gradient-to-br from-white/60 to-transparent mix-blend-overlay"></div>
+                    <div class="absolute bottom-0 right-0 w-full h-1/2 bg-black/20 rounded-b-full"></div>
+                    <div id="attendee-last-number" class="text-5xl sm:text-7xl font-black text-slate-800 dark:text-white tracking-tighter z-10 drop-shadow-md">- -</div>
+                </div>
+            </div>
+
+            <!-- Últimos 3 Sorteados -->
+            <div class="bg-brand-card border border-brand-border rounded-xl p-3 shadow-lg flex flex-col relative overflow-hidden transition-colors duration-500" id="attendee-recent-card">
+                <span id="attendee-recent-title" class="w-full text-left text-[10px] sm:text-xs font-black text-brand-text uppercase tracking-widest mb-2 z-10">Últimos 3 Sorteados</span>
+                <div id="attendee-recent-numbers" class="bg-brand-bg border border-brand-border rounded-lg p-2 text-center min-h-[40px] sm:min-h-[50px] flex items-center justify-center gap-2 sm:gap-3 z-10 transition-colors duration-500">
+                    <span class="text-slate-500 dark:text-slate-400 font-bold text-xs sm:text-sm">Aguardando sorteio</span>
+                </div>
+            </div>
+
+            <!-- Leilão em Andamento -->
+            <div id="attendee-auction-card" class="hidden bg-brand-card border border-brand-border rounded-xl p-3 shadow-lg flex-col relative overflow-hidden transition-colors duration-500">
+                <span class="w-full text-left text-[10px] sm:text-xs font-black text-amber-500 uppercase tracking-widest mb-2 z-10 flex items-center gap-1">
+                    💎 Leilão
+                </span>
+                <div class="bg-brand-bg border border-brand-border rounded-lg p-3 flex flex-col justify-center items-center z-10 transition-colors duration-500">
+                    <span id="attendee-auction-item" class="text-slate-800 dark:text-white font-bold text-sm sm:text-base text-center">Item</span>
+                    <div class="flex items-baseline gap-2 mt-1">
+                        <span class="text-amber-500 font-bold text-xs">LANCE:</span>
+                        <span id="attendee-auction-bid" class="text-3xl sm:text-4xl font-black text-amber-500 drop-shadow-md transition-all duration-300">R$ 0,00</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Board (Letras Verticais) -->
+            <div id="attendee-board-rows" class="bg-brand-card border border-brand-border rounded-xl p-2 shadow-lg flex flex-col gap-1.5 sm:gap-2 relative overflow-hidden transition-colors duration-500">
+                <!-- Rows will be injected here -->
+            </div>
+        </div>
+        
+        
+                <footer class="text-center py-6 px-4 text-xs text-slate-500 font-medium flex-shrink-0 relative z-30 bg-brand-card/50 border-t border-brand-border backdrop-blur-sm mt-auto">
+            <p class="max-w-4xl mx-auto">
+                Este programa é o resultado do Trabalho de Conclusão de Curso de <a href="https://www.instagram.com/oalison.rodrigues" target="_blank" class="text-brand-text hover:underline">Alison Fernando Rodrigues dos Santos</a>, sob orientação do <a href="https://www.instagram.com/danilonobresant" target="_blank" class="text-brand-text hover:underline">Prof. Pe. Dr. Danilo Nobre dos Santos</a> Título: "E O VERBO SE FEZ I.A.? DA REFLEXÃO TEOLÓGICA E COMUNICATIVA AO DESENVOLVIMENTO DE SOLUÇÕES PASTORAIS COM INTELIGÊNCIA ARTIFICIAL". (<a href="https://drive.google.com/file/d/14uPBeHCT5aP1ACPLlPpIjfD5J1iLQfyD/view?usp=drive_link" target="_blank" class="text-brand-text hover:underline">Link para acessar</a>)
+                <br><br>
+                Desenvolvido inteiramente com a Inteligência Artificial Gemini 3.1 PRO da Google, este projeto demonstra como é possível criar soluções pastorais inovadoras com criatividade e ferramentas de baixo custo ou gratuitas, mesmo sem conhecimentos prévios em programação.
+            </p>
+            <div class="flex items-center justify-center gap-3 mt-4">
+                <button id="donate-btn-attendee" class="flex items-center gap-1.5 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-bold transition-colors shadow-lg text-sm" data-label-key="supportButton">
+                    🤝 <span id="donate-btn-text">Faça sua Doação</span>
+                </button>
+            </div>
+        </footer>
+        
+                <div id="pix-donation-modal-attendee" class="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm hidden z-[70] flex-col items-center justify-center p-4">
+            <div class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center relative animate-bounce-in">
+                <button id="close-donation-btn-attendee" class="absolute top-3 right-3 text-slate-400 hover:text-slate-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+                <h2 id="donation-modal-title" class="text-3xl font-black text-amber-400 mb-6">Apoio ao Projeto Seminarista</h2>
+                <p id="donation-modal-desc" class="text-slate-700 dark:text-slate-300 mb-4">Sua doação ajuda a manter este projeto ativo. Agradecemos imensamente!</p>
+                <div class="space-y-6 text-left">
+                    <div class="text-center border-b border-gray-700 pb-6">
+                        <p id="donation-modal-paypal-label" class="text-lg font-bold text-gray-900 dark:text-white mb-4">Doação via PayPal</p>
+                        <div class="flex justify-center">
+                            <form action="https://www.paypal.com/donate" method="post" target="_blank">
+                                <input type="hidden" name="hosted_button_id" value="FLVDNY994MNQS" />
+                                <input type="image" src="https://www.paypalobjects.com/pt_BR/BR/i/btn/btn_donateCC_LG.gif" border="0" name="submit" title="PayPal - The safer, easier way to pay online!" alt="Faça doações com o botão do PayPal" />
+                            </form>
+                        </div>
+                    </div>
+                    <div class="pt-6">
+                        <p id="donation-modal-pix-label" class="text-lg font-bold text-gray-900 dark:text-white mb-2">PIX (Chave Aleatória)</p>
+                        <div class="flex flex-col items-center">
+                            <div id="pix-key-display-attendee" contenteditable="false" class="bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white p-3 rounded-lg text-center text-sm font-mono select-all cursor-text max-w-full overflow-hidden whitespace-nowrap overflow-ellipsis"></div>
+                            <button id="copy-pix-btn-attendee" class="mt-3 w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition-all">📋 Copiar Chave PIX</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    
+    <!-- Using module script for the logic -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    <script type="module" src="/attendee.tsx"></script>
+
+    <div id="attendee-offline-modal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[150] hidden flex-col items-center justify-center p-4 text-center">
+        <div class="animate-bounce-in bg-white dark:bg-slate-800 p-8 rounded-3xl border-2 border-red-500 shadow-2xl flex flex-col items-center justify-center max-w-sm w-full">
+            <div class="text-6xl mb-4">📡</div>
+            <h2 class="text-2xl font-black text-slate-800 dark:text-white mb-2">Conexão Perdida</h2>
+            <p class="text-slate-600 dark:text-slate-300 mb-6">Parece que você perdeu a conexão com a internet ou com o servidor. O painel será atualizado assim que a conexão retornar.</p>
+            <div class="animate-pulse flex items-center justify-center gap-2 text-red-500 font-bold">
+                <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                Reconectando...
+            </div>
+        </div>
+    </div>
+
+
+    
+    <div id="attendee-online-modal" class="fixed inset-0 bg-green-900/90 backdrop-blur-md z-[150] hidden flex-col items-center justify-center p-4 text-center">
+        <div class="animate-bounce-in bg-white dark:bg-slate-800 p-8 rounded-3xl border-2 border-green-500 shadow-[0_0_30px_rgba(34,197,94,0.3)] flex flex-col items-center justify-center max-w-sm w-full">
+            <div class="text-6xl mb-4">🟢</div>
+            <h2 class="text-2xl font-black text-slate-800 dark:text-white mb-2">Conexão Restaurada!</h2>
+            <p class="text-slate-600 dark:text-slate-300">O painel foi atualizado.</p>
+        </div>
+    </div>
+
+    <!-- Vencedores Modal -->
+    <div id="attendee-winners-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[60] hidden flex-col items-center justify-center p-4">
+        <div class="bg-brand-card w-full max-w-lg rounded-2xl shadow-xl flex flex-col border border-brand-border max-h-[85vh] overflow-hidden relative">
+            <button id="close-winners-attendee-btn" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors z-10 bg-brand-bg rounded-full p-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            <div class="p-6 pb-2 border-b border-brand-border bg-brand-bg">
+                <h3 class="text-xl font-black text-slate-800 dark:text-white flex items-center gap-2">
+                    <span class="text-amber-500">🏆</span> Galeria de Vencedores
+                </h3>
+            </div>
+            <div id="attendee-winners-container" class="p-4 overflow-y-auto flex-1 flex flex-col gap-3">
+                <p class="text-slate-500 text-center italic mt-4">Nenhum vencedor registrado ainda.</p>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

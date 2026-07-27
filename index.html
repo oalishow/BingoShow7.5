@@ -399,10 +399,16 @@
                     <!-- Será preenchido pelo JS -->
                 </div>
                 
-                <div id="global-connection-status-container" class="mt-2 w-full flex justify-center">
+                <div id="global-connection-status-container" class="mt-2 w-full flex justify-center flex-col items-center gap-2">
                     <div id="global-connection-status" class="hidden flex items-center justify-center p-2 rounded-full shadow-lg bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 text-sm font-bold font-mono text-center px-6 border-2 border-yellow-400 dark:border-yellow-600">
                         ⏳ Conectando à Nuvem...
                     </div>
+                    <button id="show-attendee-qr-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-full font-bold shadow-md text-sm transition-transform hover:scale-105 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h3a1 1 0 011 1v3a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm2 1v1h1V5H5zm0 7a1 1 0 011-1h3a1 1 0 011 1v3a1 1 0 01-1 1H4a1 1 0 01-1-1v-3zm2 1v1h1v-1H5zm6-9a1 1 0 011-1h3a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1V4zm2 1v1h1V5h-1zm-2 7a1 1 0 00-1 1v3a1 1 0 001 1h3a1 1 0 001-1v-3a1 1 0 00-1-1h-3zm1 2v1h1v-1h-1z" clip-rule="evenodd" />
+                        </svg>
+                        Mostrar QR Code (Público)
+                    </button>
                 </div>
 
                 <button id="install-pwa-btn" class="hidden mt-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black py-3 px-8 rounded-full text-lg sm:text-xl shadow-[0_0_15px_rgba(79,70,229,0.5)] transform hover:scale-110 transition-all duration-300 border-2 border-blue-400">⬇️ INSTALAR APP (OFFLINE / WINDOWS) ⬇️</button>
@@ -423,8 +429,8 @@
                 </div>
 
                 <!-- 2. BOTÕES DE CONTROLE GERAIS -->
-                <div class="grid grid-cols-2 gap-2 mb-4 flex-shrink-0">
-                    <button id="show-card-scanner-btn" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 min-h-[44px] px-4 rounded-lg text-xs shadow-sm transition-all text-center">🔎 Verificar Cartela</button>
+                <div class="flex flex-col gap-2 mb-4 flex-shrink-0">
+                    
                     <button id="show-card-generator-btn" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 min-h-[44px] px-4 rounded-lg text-xs shadow-sm transition-all text-center">🖨️ Gerar Cartelas</button>
                 </div>
                 
@@ -583,9 +589,14 @@
                     
                     
                     <div id="draw-and-prize-section" class="lg:col-span-4 grid grid-cols-1 xl:grid-cols-4 gap-6 relative order-1 lg:order-2">
-                        <div class="lg:col-span-4 xl:col-span-3 flex flex-col gap-6">
+                        <div class="lg:col-span-4 xl:col-span-3 flex flex-col gap-6 h-full">
                             <!-- NÚMERO ANUNCIADO -->
-                            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 flex flex-col justify-center items-center h-full relative">
+                            <section id="display-section" class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 flex flex-col justify-center items-center h-full flex-grow relative">
+                                <button id="fullscreen-display-btn" class="absolute top-4 right-4 p-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:bg-gray-600 rounded text-slate-800 dark:text-slate-300 transition-colors z-[10]" title="Tela Cheia">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                                    </svg>
+                                </button>
                                 <p id="main-display-label" class="text-xl sm:text-2xl font-bold text-slate-600 dark:text-slate-400 tracking-wider uppercase text-center" data-label-key="announcedNumberLabel">Número Anunciado</p>
                                 <!-- Wrapper do Zoom para o Número Anunciado -->
                                 <div id="current-number-wrapper" class="my-4 flex justify-center items-center w-full relative">
@@ -608,7 +619,7 @@
                                         <input type="range" id="fs-display-zoom-slider" min="50" max="150" value="100" class="w-full h-2 bg-gray-300 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer">
                                     </div>
                                 </div>
-                            </div>
+                            </section>
                             
                             <!-- 2. LEILÃO -->
                             <section id="auction-section" class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl relative flex flex-col justify-center">
@@ -657,7 +668,7 @@
                         </div>
                         
                         <!-- SORTEIO DE BRINDES -->
-                        <div id="prize-draw-section" class="lg:col-span-4 xl:col-span-1 bg-white dark:bg-gray-800 rounded-2xl p-4 w-full mx-auto flex flex-col">
+                        <div id="prize-draw-section" class="lg:col-span-4 xl:col-span-1 bg-white dark:bg-gray-800 rounded-2xl p-4 w-full mx-auto flex flex-col h-full">
                             <div class="flex items-center justify-center mb-3 relative">
                                 <h2 class="text-lg font-bold text-center text-slate-800 dark:text-slate-300 w-full" data-label-key="prizeDrawTitle">Sorteio de Brindes</h2>
                             </div>
@@ -723,8 +734,8 @@
     <div id="verification-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[70] hidden"></div>
     <div id="floating-number-modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-[70] hidden"></div>
     <div id="sponsor-display-modal" class="fixed inset-0 bg-black bg-opacity-80 flex flex-col p-4 overflow-y-auto z-50 hidden"></div>
-    <div id="winner-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[70] hidden"></div>
-    <div id="custom-alert-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[70] hidden"></div>
+    <div id="winner-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[100] hidden"></div>
+    <div id="custom-alert-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[150] hidden"></div>
     <div id="congrats-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[70] hidden"></div>
     <div id="event-break-modal" class="fixed inset-0 bg-gray-100 dark:bg-gray-900 bg-opacity-95 flex items-center justify-center p-4 z-[70] hidden"></div>
     <div id="menu-edit-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[70] hidden"></div>
@@ -736,7 +747,7 @@
     <div id="reset-confirm-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[70] hidden"></div>
     <div id="drawn-prizes-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[70] hidden"></div>
     <div id="donation-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[70] hidden"></div>
-    <div id="final-winners-modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-[70] hidden"></div>
+    <div id="final-winners-modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-[110] hidden"></div>
     <div id="changelog-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[70] hidden"></div>
     <div id="load-options-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[70] hidden"></div>
     <div id="settings-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[70] hidden"></div>
@@ -763,6 +774,23 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <!-- MODAL QR CODE PÚBLICO -->
+    <div id="attendee-qr-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-[200] hidden backdrop-blur-sm transition-opacity">
+        <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-8 max-w-xl w-full mx-4 relative transform transition-all flex flex-col items-center">
+            <button id="close-attendee-qr-btn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            <h2 class="text-3xl font-black text-indigo-600 dark:text-indigo-400 mb-2 uppercase text-center w-full">Acompanhe pelo Celular!</h2>
+            <p class="text-slate-600 dark:text-slate-300 text-center mb-6">Escaneie o QR Code abaixo para visualizar o painel de números atualizado em tempo real na sua tela.</p>
+            <div class="bg-white p-4 rounded-2xl shadow-inner mb-4 flex justify-center items-center w-64 h-64">
+                <img id="attendee-qr-image" src="" alt="QR Code do Evento" class="w-full h-full object-contain hidden" />
+                <div id="attendee-qr-loading" class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+            </div>
+            <a href="#" target="_blank" class="text-sm text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 text-center font-bold block break-all" id="attendee-qr-url-text">Gerando link...</a>
+<button id="attendee-open-new-tab-btn" class="mt-4 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 dark:bg-indigo-900/50 dark:hover:bg-indigo-900 dark:text-indigo-300 px-4 py-2 rounded-xl font-bold transition-colors shadow-sm w-full">Abrir em nova aba</button>
+        </div>
+    </div>
+
     <script type="module" src="/index.tsx"></script>
 </body>
 </html>

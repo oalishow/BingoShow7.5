@@ -30,6 +30,10 @@ let eventId = '';
                 cardsData: {} as { [uuid: string]: { series: number, numbers: number[][] } },
                 activeGameNumber: null as string | null,
                 currentBingoType: '',
+                pendingNumber: null as number | null,
+                isVerifying: false,
+                latestBingoTimestamp: 0,
+                latestRoundTimestamp: 0,
                 gameCount: 6,
                 menuItems: [
                     "Refrigerante - R$ 5,00", "Cerveja - R$ 7,00", "Água - R$ 3,00", 
@@ -90,12 +94,17 @@ let eventId = '';
                 appConfig: {
                     isDarkMode: true,
                     onlineSyncEnabled: true,
+                    showSponsorsOnMobile: true,
                     eventId: '',
+                    eventPassword: '',
                     pixKey: '1e8e4af0-4d23-440c-9f3d-b4e527f65911',
                     paypalLink: 'https://www.paypal.com/donate/?hosted_button_id=WJBLF3LV3RZRW',
                     tutorialVideoLink: 'https://youtu.be/8iOOW-CR-WQ?si=Jolrp2qR38xhY5EZ', 
                     bingoTitle: 'BINGO',
                     boardColor: 'default',
+                    auctionBid: '0',
+                    auctionItemName: '',
+                    auctionWinnerName: '',
                     boardScale: 90,
                     displayScale: 100,
                     auctionScale: 100,
@@ -112,7 +121,7 @@ let eventId = '';
                     enableSponsorsByNumber: false,
                     enableSoundEffects: true,
                     enableModalAutoclose: true,
-                    modalAutocloseSeconds: 5,
+                    modalAutocloseSeconds: 3,
                     sponsorDisplaySeconds: 8,
                     showSponsorCountdown: true,
                     sponsorTransitionEffect: 'fade',
@@ -273,7 +282,8 @@ let eventId = '';
             // --- State Mutation Methods (Actions) ---
             setActiveGame(gameNumber: string | null) {
                 this.state.activeGameNumber = gameNumber;
-                this.debouncedSave();
+                this.state.latestRoundTimestamp = Date.now();
+                this.debouncedSave(true);
             },
 
             addExtraGame() {
@@ -287,7 +297,7 @@ let eventId = '';
                     isComplete: false,
                     color: roundColors[(this.state.gameCount - 1) % roundColors.length]
                 };
-                this.debouncedSave();
+                this.debouncedSave(true);
                 return this.state.gameCount;
             },
             
@@ -296,7 +306,7 @@ let eventId = '';
                     const game = this.state.gamesData[this.state.activeGameNumber];
                     if (game && !game.calledNumbers.includes(number)) {
                         game.calledNumbers.push(number);
-                        this.debouncedSave();
+                        this.debouncedSave(true);
                     }
                 }
             },
@@ -308,7 +318,7 @@ let eventId = '';
                         const index = game.calledNumbers.indexOf(number);
                         if (index > -1) {
                             game.calledNumbers.splice(index, 1);
-                            this.debouncedSave();
+                            this.debouncedSave(true);
                         }
                     }
                 }
@@ -319,7 +329,7 @@ let eventId = '';
                     const game = this.state.gamesData[this.state.activeGameNumber];
                     if (game) {
                         game.calledNumbers = [];
-                        this.debouncedSave();
+                        this.debouncedSave(true);
                     }
                 }
             },
@@ -337,7 +347,9 @@ let eventId = '';
                             numbers: [...game.calledNumbers].sort((a,b) => a-b)
                         };
                         game.winners.push(winnerData);
-                        this.debouncedSave();
+                        this.state.latestBingoTimestamp = Date.now();
+                        this.state.isVerifying = false;
+                        this.debouncedSave(true);
                         return winnerData;
                     }
                 }
@@ -355,7 +367,11 @@ let eventId = '';
                     versionText: currentVersion,
                     versionHistory: this.state.versionHistory,
                     appConfig: this.state.appConfig,
+                    isVerifying: this.state.isVerifying,
+                    latestBingoTimestamp: this.state.latestBingoTimestamp,
+                    latestRoundTimestamp: this.state.latestRoundTimestamp,
                     appLabels: this.state.appLabels,
+                    pendingNumber: this.state.pendingNumber,
                 };
                 if (includeCards) {
                     state.cardsData = this.state.cardsData;
@@ -374,6 +390,12 @@ let eventId = '';
                 this.state.drawnPrizeNumbers = state.drawnPrizeNumbers || [];
                 this.state.versionHistory = state.versionHistory || this.state.versionHistory;
                 const loadedConfig = state.appConfig || {};
+                
+                // Força o tempo de exibição do número para 3 segundos se estiver em 5 (atendendo ao pedido)
+                if (loadedConfig.modalAutocloseSeconds === 5) {
+                    loadedConfig.modalAutocloseSeconds = 3;
+                }
+
                 
                 // Migração: Se existir customLogo mas não customLogoBase64, promove para o novo campo
                 if (loadedConfig.customLogo && !loadedConfig.customLogoBase64) {
@@ -410,22 +432,22 @@ let eventId = '';
                 this.state.appLabels = { ...this.state.appLabels, ...loadedLabels };
             },
 
-            debouncedSave() {
+            debouncedSave(immediate = false) {
                 clearTimeout(this.saveTimeout);
                 this.saveTimeout = setTimeout(() => {
                     this.saveStateToLocalStorage();
-                }, 1000);
+                }, immediate ? 10 : 1000);
                 if (typeof (this as any).debouncedFirebaseSync === 'function') {
-                    (this as any).debouncedFirebaseSync();
+                    (this as any).debouncedFirebaseSync(immediate);
                 }
             },
 
-            debouncedFirebaseSync() {
+            debouncedFirebaseSync(immediate = false) {
                 if (!this.state.appConfig.onlineSyncEnabled || !eventId || !firebaseUser) return;
                 clearTimeout((this as any).firebaseSyncTimeout);
                 (this as any).firebaseSyncTimeout = setTimeout(async () => {
                    if ((this as any).isSyncingFirebase) {
-                       this.debouncedFirebaseSync();
+                       this.debouncedFirebaseSync(immediate);
                        return;
                    }
                    (this as any).isSyncingFirebase = true;
@@ -499,7 +521,7 @@ let eventId = '';
                                batch.set(gameRef, {
                                    name: game.name || `Rodada ${gameId}`,
                                    color: game.color || '',
-                                   calledNumbers: game.calledNumbers,
+                                   calledNumbers: game.calledNumbers || [],
                                    updatedAt: Date.now()
                                }, { merge: true });
                            }
@@ -511,7 +533,7 @@ let eventId = '';
                    } finally {
                        (this as any).isSyncingFirebase = false;
                    }
-                }, 2000);
+                }, immediate ? 100 : 2000);
             },
 
             async saveStateToLocalStorage() {
@@ -615,7 +637,7 @@ let eventId = '';
                 renderUIFromState();
                 
                 if (forceSave) {
-                    this.debouncedSave();
+                    this.debouncedSave(true);
                 }
             }
         };
@@ -632,6 +654,12 @@ let eventId = '';
         let spinTimeout: any;
         let cycloneInterval: any;
         let winnerDisplayTimeout: any; 
+
+        // --- Virtualization State for Large Datasets (2000+ attendees/winners) ---
+        let winnerSearchFilter = '';
+        let winnersVisibleCount = 30;
+        const WINNERS_BATCH_SIZE = 30;
+        let isWinnersScrollBound = false;
 
         // --- Constants ---
         const currentVersion = "7.7";
@@ -801,6 +829,8 @@ function incrementAuctionBid(amount: number) {
         let newBid = currentBid + amount;
         if (newBid < 0) newBid = 0;
         bidInput.value = newBid.toString();
+        appStore.state.appConfig.auctionBid = newBid.toString();
+        appStore.debouncedSave();
         updateAuctionBidDisplay(newBid);
 
         const actualAmountAdded = newBid - currentBid;
@@ -1196,9 +1226,13 @@ function populateSettingsShortcutsTab() {
                             <div class="border-b border-slate-300 dark:border-gray-700 pb-6 mt-6">
                                 <h3 class="text-xl font-bold text-slate-700 dark:text-slate-300 mb-2">🎈 Etapa 2: Online Sync</h3>
                                 <p class="text-sm text-slate-600 dark:text-slate-400 mb-2">Ative o modo Online para permitir que os jogadores acessem suas cartelas diretamente pelo celular escaneando o QR Code. Ao ativar, você precisará aguardar a sincronização (host online).</p>
-                                <div class="flex items-center gap-3 bg-indigo-100 dark:bg-indigo-900/50 p-3 rounded-lg border border-indigo-200 dark:border-indigo-800 mb-4">
+                                <div class="flex items-center gap-3 bg-indigo-100 dark:bg-indigo-900/50 p-3 rounded-lg border border-indigo-200 dark:border-indigo-800 mb-2">
                                     <input type="checkbox" id="online-sync-toggle" class="h-5 w-5 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500">
-                                    <label for="online-sync-toggle" class="text-slate-800 dark:text-indigo-200 font-bold">Transmitir rodadas ao vivo para cartelas digitais</label>
+                                    <label for="online-sync-toggle" class="text-slate-800 dark:text-indigo-200 font-bold">Ativar Sincronização em Nuvem</label>
+                                </div>
+                                <div class="flex items-center gap-3 bg-indigo-50 dark:bg-indigo-900/30 p-3 rounded-lg border border-indigo-100 dark:border-indigo-800/50 mb-4">
+                                    <input type="checkbox" id="show-sponsors-mobile-toggle" class="h-5 w-5 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500">
+                                    <label for="show-sponsors-mobile-toggle" class="text-slate-800 dark:text-indigo-200 font-bold">Mostrar patrocinadores no celular do público</label>
                                 </div>
                                 <p class="text-xs text-red-600 dark:text-red-400 font-bold mb-4">⚠️ Aviso: Imagens e logos não são sincronizados na Nuvem. Para salvar as imagens em alta definição, salve o backup no computador (JSON).</p>
                                 <h3 class="text-lg font-bold text-slate-700 dark:text-slate-300 mb-2">🔒 Senha do Evento (Opcional)</h3>
@@ -1780,9 +1814,14 @@ function showDrawnPrizesModal() {
         }
     };
 
+    let historyVisibleCount = 60;
     const renderHistory = () => {
         historyList.innerHTML = '';
-        [...drawnPrizeNumbers].reverse().forEach(num => {
+        const reversed = [...drawnPrizeNumbers].reverse();
+        const itemsToRender = reversed.slice(0, historyVisibleCount);
+        const fragment = document.createDocumentFragment();
+
+        itemsToRender.forEach(num => {
             const prizeEl = document.createElement('div');
             prizeEl.className = 'relative bg-gray-200 dark:bg-gray-700 text-white font-bold rounded-lg w-20 h-14 flex items-center justify-center text-2xl shadow-md cursor-pointer group';
             prizeEl.textContent = num.toString();
@@ -1798,7 +1837,6 @@ function showDrawnPrizesModal() {
                 if (index > -1) {
                     appStore.state.drawnPrizeNumbers.splice(index, 1);
                     appStore.debouncedSave();
-                    // Re-render the modal content
                     renderLastDrawn();
                     renderHistory();
                     subtitle.textContent = `Total Sorteado: ${appStore.state.drawnPrizeNumbers.length}`;
@@ -1806,8 +1844,21 @@ function showDrawnPrizesModal() {
             };
 
             prizeEl.appendChild(deleteBtn);
-            historyList.appendChild(prizeEl);
+            fragment.appendChild(prizeEl);
         });
+
+        historyList.appendChild(fragment);
+
+        if (historyVisibleCount < reversed.length) {
+            const loadMoreBtn = document.createElement('button');
+            loadMoreBtn.className = 'col-span-full my-2 mx-auto bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold py-2 px-6 rounded-full shadow transition-all';
+            loadMoreBtn.textContent = `Carregar Mais (+60 de ${reversed.length})`;
+            loadMoreBtn.onclick = () => {
+                historyVisibleCount += 60;
+                renderHistory();
+            };
+            historyList.appendChild(loadMoreBtn);
+        }
     };
     
     renderLastDrawn();
@@ -2546,6 +2597,13 @@ function showSettingsModal() {
         }
     });
 
+    const sponsorsMobileToggle = document.getElementById('show-sponsors-mobile-toggle') as HTMLInputElement;
+    sponsorsMobileToggle.checked = appConfig.showSponsorsOnMobile !== false; // default true
+    sponsorsMobileToggle.addEventListener('change', (e) => {
+        appStore.state.appConfig.showSponsorsOnMobile = (e.target as HTMLInputElement).checked;
+        appStore.debouncedSave();
+    });
+
     const passwordInput = document.getElementById('event-password-input') as HTMLInputElement;
     passwordInput.value = appConfig.eventPassword || '';
     passwordInput.addEventListener('input', (e) => {
@@ -2664,11 +2722,11 @@ function showSettingsModal() {
             appStore.state.gamesData[6].winners.push({ id: 601, name: "Final Evento", prize: appStore.state.gamesData[6].prizes.prize2, gameNumber: '6', bingoType: 'prize2', numbers: appStore.state.gamesData[6].calledNumbers });
             appStore.state.gamesData[6].isComplete = true;
 
-            if (!appStore.state.gamesData['Brindes']) appStore.state.gamesData['Brindes'] = { winners: [] };
+            if (!appStore.state.gamesData['Brindes']) appStore.state.gamesData['Brindes'] = { winners: [], calledNumbers: [] };
             appStore.state.gamesData['Brindes'].winners.push({ id: 901, name: "Carla", prize: "Ventilador", gameNumber: 'Brinde', bingoType: 'Sorteio', cartela: '12' });
             appStore.state.gamesData['Brindes'].winners.push({ id: 902, name: "Ronaldo", prize: "Rádio", gameNumber: 'Brinde', bingoType: 'Sorteio', cartela: '101' });
 
-            if (!appStore.state.gamesData['Leilão']) appStore.state.gamesData['Leilão'] = { winners: [] };
+            if (!appStore.state.gamesData['Leilão']) appStore.state.gamesData['Leilão'] = { winners: [], calledNumbers: [] };
             appStore.state.gamesData['Leilão'].winners.push({ id: 1001, name: "Marcos", prize: "Bolo (Leilão)", gameNumber: 'Leilão', bingoType: 'Leilão', itemName: "Bolo de Chocolate", bid: "150" });
             
             appStore.state.appConfig.isEventClosed = false;
@@ -2684,6 +2742,8 @@ function showSettingsModal() {
         }
         
         // --- Funções Auxiliares ---
+
+let fsConfettiInstance: any = null;
 
 function getConfettiFn() {
     if (typeof confetti !== 'function') return null;
@@ -2701,8 +2761,16 @@ function getConfettiFn() {
              canvas.style.pointerEvents = 'none';
              canvas.style.zIndex = '1000';
              fsElement.appendChild(canvas);
+             fsConfettiInstance = confetti.create(canvas, { resize: true, useWorker: true });
+         } else {
+             if (canvas.parentNode !== fsElement) {
+                 fsElement.appendChild(canvas);
+             }
+             if (!fsConfettiInstance) {
+                 fsConfettiInstance = confetti.create(canvas, { resize: true, useWorker: true });
+             }
          }
-         return confetti.create(canvas, { resize: true, useWorker: true });
+         return fsConfettiInstance;
     }
     return confetti;
 }
@@ -3193,13 +3261,30 @@ function applyAuctionZoom(scale: number) {
                     const result = e.target?.result as string;
                     if (!result) throw new Error("Arquivo vazio ou ilegível.");
                     
-                    const loadedState = JSON.parse(result);
+                                        const loadedState = JSON.parse(result);
                     
                     if (!loadedState.gamesData || !loadedState.appConfig) {
                          throw new Error("O arquivo selecionado não parece ser um backup válido do Bingo Show.");
                     }
-        
+
+                    const currentEventId = appStore.state.appConfig.eventId;
+                    let keepCurrentQr = false;
+                    if (currentEventId && loadedState.appConfig.eventId && currentEventId !== loadedState.appConfig.eventId) {
+                        keepCurrentQr = confirm(`Este backup pertence a um evento/painel diferente.
+
+Deseja MANTER o seu QR Code/Link atual para o público?
+
+[OK] Sim, manter o link atual.
+[Cancelar] Não, restaurar o link do backup.`);
+                    }
+
                     appStore.loadStateFromObject(loadedState);
+                    
+                    if (keepCurrentQr && currentEventId) {
+                        appStore.state.appConfig.eventId = currentEventId;
+                        appStore.state.appConfig.onlineSyncEnabled = true;
+                    }
+                    
                     
                     // If file has cards, save them to IDB
                     if (loadedState.cardsData) {
@@ -3384,6 +3469,9 @@ function applyAuctionZoom(scale: number) {
                 return;
             }
 
+            appStore.state.pendingNumber = number;
+            appStore.debouncedFirebaseSync(true);
+
             const individualSponsor = appConfig.sponsorsByNumber[number];
             const globalSponsor = appConfig.globalSponsor;
 
@@ -3447,6 +3535,8 @@ function applyAuctionZoom(scale: number) {
             DOMElements.floatingNumberModal.classList.remove('hidden');
 
             const cleanup = () => {
+                appStore.state.pendingNumber = null;
+                appStore.debouncedFirebaseSync(true);
                 document.removeEventListener('keydown', handleKeydown);
                 clearTimeout(floatingNumberTimeout as ReturnType<typeof setTimeout>);
             };
@@ -4358,6 +4448,8 @@ function applyAuctionZoom(scale: number) {
             zoomInBtn.addEventListener('click', () => adjustZoom(5));
             zoomOutBtn.addEventListener('click', () => adjustZoom(-5));
         
+            appStore.state.isVerifying = true;
+            appStore.debouncedSave(true);
             DOMElements.verificationModal.classList.remove('hidden');
         
             const cleanup = () => {
@@ -4391,6 +4483,8 @@ function applyAuctionZoom(scale: number) {
             });
             rejectBtn.addEventListener('click', () => {
                 cleanup();
+                appStore.state.isVerifying = false;
+                appStore.debouncedSave(true);
                 DOMElements.verificationModal.classList.add('hidden');
             });
         
@@ -4486,17 +4580,19 @@ function applyAuctionZoom(scale: number) {
             
             const winnerNameInput = document.getElementById('winner-name-input') as HTMLInputElement;
             const registerWinnerBtn = document.getElementById('register-winner-btn')!;
-            let countdown = 20;
+            let countdown = 60; // Increased to 60 seconds
             const timerEl = document.getElementById('winner-countdown-timer')!;
             timerEl.textContent = countdown.toString();
             
             const cleanupWinnerModal = () => {
-                clearInterval(countdownInterval);
+                if (countdownInterval) clearInterval(countdownInterval);
                 if (confettiAnimationId) clearInterval(confettiAnimationId);
                 document.removeEventListener('keydown', handleKeydown);
+                appStore.state.isVerifying = false;
+                appStore.debouncedSave(true);
             };
 
-            const countdownInterval = setInterval(() => {
+            let countdownInterval: any = setInterval(() => {
                 countdown--;
                 timerEl.textContent = countdown.toString();
                 if (countdown <= 0) {
@@ -4504,6 +4600,13 @@ function applyAuctionZoom(scale: number) {
                     DOMElements.winnerModal.classList.add('hidden');
                 }
             }, 1000);
+
+            winnerNameInput.addEventListener('focus', () => {
+                if (countdownInterval) {
+                    clearInterval(countdownInterval);
+                    timerEl.style.display = 'none'; // Hide timer when typing
+                }
+            });
 
             const registerAndClose = () => {
                 cleanupWinnerModal();
@@ -4564,32 +4667,147 @@ function applyAuctionZoom(scale: number) {
             document.addEventListener('keydown', handleKeydown);
         }
         
-        function renderWinner(winnerData: any) {
+        function createWinnerCardElement(winnerData: any): HTMLElement {
             const { gamesData, appLabels } = appStore.state;
             const winnerCard = document.createElement('div');
-            winnerCard.className = 'winner-card bg-white dark:bg-gray-700 p-4 rounded-xl shadow-md cursor-pointer transition-transform transform hover:scale-105 border border-slate-200 dark:border-transparent min-h-[44px]';
+            winnerCard.className = 'winner-card bg-white dark:bg-gray-700 p-4 rounded-xl shadow-md cursor-pointer transition-transform transform hover:scale-[1.02] border border-slate-200 dark:border-transparent min-h-[44px]';
             winnerCard.dataset.winnerId = winnerData.id.toString();
 
-            const prizeText = winnerData.bingoType === 'Sorteio' ? winnerData.prize : `${appLabels[winnerData.bingoType + 'Label' as keyof typeof appLabels]} (${winnerData.prize})`;
+            const prizeLabelKey = (winnerData.bingoType + 'Label') as keyof typeof appLabels;
+            const prizeText = winnerData.bingoType === 'Sorteio' ? winnerData.prize : `${appLabels[prizeLabelKey] || winnerData.bingoType} (${winnerData.prize})`;
             winnerCard.innerHTML = `<h4 class="text-lg font-bold text-gray-900 dark:text-white">${winnerData.name}</h4>
                                      <p class="text-sm font-semibold text-amber-500 dark:text-amber-300">${prizeText}</p>
                                      <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">${winnerData.gameNumber === 'Brinde' || winnerData.gameNumber === 'Leilão' ? '' : gamesData[winnerData.gameNumber]?.name || `Rodada ${winnerData.gameNumber}`}</p>`;
             
             winnerCard.addEventListener('click', () => showWinnerEditModal(winnerData.id));
-            
-            DOMElements.winnersContainer.prepend(winnerCard);
+            return winnerCard;
+        }
+
+        function renderWinner(winnerData: any) {
+            renderAllWinners();
         }
         
         function renderAllWinners() {
-            DOMElements.winnersContainer.innerHTML = '';
+            if (!DOMElements.winnersContainer) return;
+
             const allWinners: any[] = [];
-            Object.values(appStore.state.gamesData).forEach(game => {
+            Object.values(appStore.state.gamesData).forEach((game: any) => {
                 if (game.winners && game.winners.length > 0) {
                     allWinners.push(...game.winners);
                 }
             });
-            allWinners.sort((a, b) => b.id - a.id);
-            allWinners.forEach(winner => renderWinner(winner));
+            allWinners.sort((a: any, b: any) => b.id - a.id);
+
+            const query = winnerSearchFilter.trim().toLowerCase();
+            const filtered = query
+                ? allWinners.filter((w: any) => {
+                    const name = (w.name || '').toLowerCase();
+                    const prize = (w.prize || '').toLowerCase();
+                    const gameName = (appStore.state.gamesData[w.gameNumber]?.name || `Rodada ${w.gameNumber}` || '').toLowerCase();
+                    return name.includes(query) || prize.includes(query) || gameName.includes(query);
+                  })
+                : allWinners;
+
+            let searchInput = document.getElementById('winners-search-input') as HTMLInputElement;
+            let listWrapper = document.getElementById('winners-list-wrapper');
+
+            if (!searchInput || !listWrapper) {
+                DOMElements.winnersContainer.innerHTML = `
+                    <div class="sticky top-0 z-10 bg-slate-100 dark:bg-gray-800 pt-1 pb-2 space-y-1 border-b border-slate-200 dark:border-gray-700 mb-2">
+                        <input id="winners-search-input" type="text" placeholder="🔍 Pesquisar em ${allWinners.length} vencedores..." value="${winnerSearchFilter}" class="w-full text-xs font-medium p-2 rounded-lg border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500">
+                        <div id="winners-count-badge" class="text-[11px] text-slate-500 dark:text-slate-400 font-semibold px-1 flex justify-between items-center">
+                            <span>Total: ${allWinners.length} vencedores</span>
+                            <span>${filtered.length < allWinners.length ? `(${filtered.length} filtrados)` : ''}</span>
+                        </div>
+                    </div>
+                    <div id="winners-list-wrapper" class="space-y-3"></div>
+                    <div id="winners-load-more-container" class="mt-3 text-center"></div>
+                `;
+
+                searchInput = document.getElementById('winners-search-input') as HTMLInputElement;
+                listWrapper = document.getElementById('winners-list-wrapper')!;
+
+                searchInput.addEventListener('input', (e) => {
+                    winnerSearchFilter = (e.target as HTMLInputElement).value;
+                    winnersVisibleCount = WINNERS_BATCH_SIZE;
+                    renderAllWinners();
+                });
+            } else {
+                const countBadge = document.getElementById('winners-count-badge');
+                if (countBadge) {
+                    countBadge.innerHTML = `
+                        <span>Total: ${allWinners.length} vencedores</span>
+                        <span>${filtered.length < allWinners.length ? `(${filtered.length} filtrados)` : ''}</span>
+                    `;
+                }
+            }
+
+            if (!listWrapper) return;
+            listWrapper.innerHTML = '';
+
+            if (filtered.length === 0) {
+                listWrapper.innerHTML = `<p class="text-sm text-slate-500 dark:text-slate-400 text-center py-4">${allWinners.length === 0 ? 'Nenhum vencedor registrado.' : 'Nenhum vencedor encontrado com esse filtro.'}</p>`;
+                const loadMoreContainer = document.getElementById('winners-load-more-container');
+                if (loadMoreContainer) loadMoreContainer.innerHTML = '';
+                return;
+            }
+
+            const itemsToRender = filtered.slice(0, winnersVisibleCount);
+            const fragment = document.createDocumentFragment();
+
+            itemsToRender.forEach((winner: any) => {
+                fragment.appendChild(createWinnerCardElement(winner));
+            });
+
+            listWrapper.appendChild(fragment);
+
+            const loadMoreContainer = document.getElementById('winners-load-more-container');
+            if (loadMoreContainer) {
+                if (winnersVisibleCount < filtered.length) {
+                    loadMoreContainer.innerHTML = `
+                        <div class="flex flex-col gap-1 items-center pb-2">
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400">Exibindo ${itemsToRender.length} de ${filtered.length} vencedores</p>
+                            <div class="flex gap-2">
+                                <button id="winners-load-more-btn" class="bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold py-1.5 px-4 rounded-lg shadow-sm transition-all">
+                                    Carregar Mais (+${WINNERS_BATCH_SIZE})
+                                </button>
+                                <button id="winners-load-all-btn" class="bg-slate-600 hover:bg-slate-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg shadow-sm transition-all">
+                                    Mostrar Todos
+                                </button>
+                            </div>
+                        </div>
+                    `;
+
+                    document.getElementById('winners-load-more-btn')?.addEventListener('click', () => {
+                        winnersVisibleCount += WINNERS_BATCH_SIZE;
+                        renderAllWinners();
+                    });
+
+                    document.getElementById('winners-load-all-btn')?.addEventListener('click', () => {
+                        winnersVisibleCount = filtered.length;
+                        renderAllWinners();
+                    });
+                } else if (filtered.length > WINNERS_BATCH_SIZE) {
+                    loadMoreContainer.innerHTML = `
+                        <p class="text-[11px] text-slate-400 dark:text-slate-500 text-center py-1">Todos os ${filtered.length} vencedores carregados</p>
+                    `;
+                } else {
+                    loadMoreContainer.innerHTML = '';
+                }
+            }
+
+            if (!isWinnersScrollBound) {
+                isWinnersScrollBound = true;
+                DOMElements.winnersContainer.addEventListener('scroll', () => {
+                    const container = DOMElements.winnersContainer;
+                    if (container.scrollTop + container.clientHeight >= container.scrollHeight - 100) {
+                        if (winnersVisibleCount < filtered.length) {
+                            winnersVisibleCount += WINNERS_BATCH_SIZE;
+                            renderAllWinners();
+                        }
+                    }
+                });
+            }
         }
         
         function showAlert(message: string) {
@@ -4854,6 +5072,7 @@ function applyAuctionZoom(scale: number) {
 
             if (appStore.state.appConfig.enableSoundEffects) sounds.playClick();
             appStore.state.drawnPrizeNumbers.push(finalNumber);
+            appStore.debouncedSave(true);
 
             const displayContainer = DOMElements.prizeDrawDisplayContainer;
             
@@ -5267,10 +5486,17 @@ function showRoundEditModal(gameNumber: string) {
                 const batchPromises = batch.map(async (uuid, idx) => {
                     const cardData = appStore.state.cardsData[uuid];
                     if (!cardData) return "";
-                    const cardUrl = window.location.origin + window.location.pathname + "?card=" + uuid;
+                                        let basePath = window.location.pathname;
+                    if (basePath.endsWith('index.html')) {
+                        basePath = basePath.replace('index.html', '');
+                    }
+                    if (!basePath.endsWith('/')) {
+                        basePath += '/';
+                    }
+                    const attendeeUrl = `${window.location.origin}${basePath}attendee.html?event=${encodeURIComponent(appStore.state.appConfig.eventId || "default")}`;
                     let qrDataUrl = "";
                     try {
-                        qrDataUrl = await QRCode.toDataURL(cardUrl, { width: 140, margin: 1 });
+                        qrDataUrl = await QRCode.toDataURL(attendeeUrl, { width: 140, margin: 1 });
                     } catch (e) {}
                     
                     const gameInfo = appStore.state.gamesData[idx + 1];
@@ -5332,7 +5558,7 @@ function showRoundEditModal(gameNumber: string) {
                         
                                 <!-- Info Column (Right side) -->
                                 <div class="w-[28%] flex flex-col items-center bg-white p-[2px] justify-between flex-shrink-0 min-h-0">
-                                    <div class="text-[7px] font-bold leading-tight uppercase mb-[1px] text-center px-1">Escaneie para<br>jogar</div>
+                                    <div class="text-[7px] font-bold leading-tight uppercase mb-[1px] text-center px-1">Acompanhe ao<br>vivo</div>
                                     <img src="${qrDataUrl}" alt="QR" class="w-20 h-20 border-[2px] border-black object-contain bg-white" />
                                     <div class="text-[4px] text-gray-500 uppercase tracking-widest break-all font-mono mb-[2px]">ID: ${uuid.substring(0,8)}</div>
                                     
@@ -5459,111 +5685,7 @@ function showRoundEditModal(gameNumber: string) {
         let scannerStream: MediaStream | null = null;
         let scannerAnimationId: number | null = null;
 
-        async function showCardScannerModal() {
-            if (appStore.state.appConfig.enableSoundEffects) sounds.playClick();
-            DOMElements.cardScannerModal.innerHTML = getModalTemplates().cardScanner;
-            DOMElements.cardScannerModal.classList.remove('hidden');
-            
-            const video = document.getElementById('scanner-video') as HTMLVideoElement;
-            const canvas = document.getElementById('scanner-canvas') as HTMLCanvasElement;
-            const message = document.getElementById('scanner-message') as HTMLElement;
-            const closeBtn = document.getElementById('close-card-scanner-btn') as HTMLButtonElement;
-
-            const cleanupScanner = () => {
-                if (scannerAnimationId) cancelAnimationFrame(scannerAnimationId);
-                if (scannerStream) {
-                    scannerStream.getTracks().forEach(track => track.stop());
-                }
-                DOMElements.cardScannerModal.classList.add('hidden');
-            };
-
-            closeBtn.onclick = cleanupScanner;
-
-            const manualInput = document.getElementById('manual-card-id-input') as HTMLInputElement;
-            const manualBtn = document.getElementById('verify-manual-card-btn') as HTMLButtonElement;
-            manualBtn.addEventListener('click', () => {
-                const searchId = manualInput.value.trim();
-                if (!searchId) {
-                    showAlert("Digite o número da cartela.");
-                    return;
-                }
-                
-                // Procurar nas cartelas pelo numero curto (series)
-                let foundUuid = "";
-                for (const [uuid, card] of Object.entries(appStore.state.cardsData)) {
-                    if (card.series.toString() === searchId) {
-                        foundUuid = uuid;
-                        break;
-                    }
-                }
-                
-                if (foundUuid) {
-                    cleanupScanner();
-                    verifyCardByQRCode(foundUuid);
-                } else {
-                    showAlert("Cartela N° " + searchId + " não encontrada na base de dados.");
-                }
-            });
-            manualInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') manualBtn.click();
-            });
-
-            try {
-                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    throw new Error("Navegador não suporta acesso à câmera ou execução em contexto inseguro.");
-                }
-                scannerStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-                video.srcObject = scannerStream;
-                video.setAttribute("playsinline", "true");
-                await video.play();
-                
-                const tick = () => {
-                    if (video.readyState === video.HAVE_ENOUGH_DATA && !DOMElements.cardScannerModal.classList.contains('hidden')) {
-                        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-                        if (ctx) {
-                            canvas.height = video.videoHeight;
-                            canvas.width = video.videoWidth;
-                            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                            const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                                inversionAttempts: "attemptBoth",
-                            });
-                            
-                            if (code) {
-                                message.textContent = "QR Code detectado!";
-                                message.classList.add("text-green-400");
-                                message.classList.remove("text-slate-400");
-                                cleanupScanner();
-                                verifyCardByQRCode(code.data);
-                                return;
-                            }
-                        }
-                    }
-                    if (!DOMElements.cardScannerModal.classList.contains('hidden')) {
-                        scannerAnimationId = requestAnimationFrame(tick);
-                    }
-                };
-                scannerAnimationId = requestAnimationFrame(tick);
-            } catch (error: any) {
-                console.warn("Erro ao acessar a câmera:", error);
-                message.innerHTML = `<b>Câmera Indisponível:</b> ${error.message || "Permissão negada"}.<br>Caso não consiga habilitar, digite o número da cartela acima.`;
-                message.classList.add("text-amber-500");
-                message.classList.remove("text-slate-400");
-                
-                // Keep the manual input working by just hiding the video area or showing a placeholder
-                video.classList.add("hidden");
-                const parent = video.parentElement;
-                if (parent && !document.getElementById('camera-placeholder')) {
-                    const placeholder = document.createElement("div");
-                    placeholder.id = "camera-placeholder";
-                    placeholder.className = "w-full h-full flex flex-col items-center justify-center bg-gray-200 dark:bg-gray-800 text-gray-500 dark:text-gray-400 p-4 text-center";
-                    placeholder.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mb-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg><p>Câmera desativada ou sem permissão.</p><p class="text-sm mt-2 font-bold">Use o campo de texto acima.</p>`;
-                    parent.appendChild(placeholder);
-                }
-            }
-        }
-
-        function verifyCardByQRCode(scannedData: string) {
+        async function verifyCardByQRCode(scannedData: string) {
             let uuid = scannedData;
             try {
                 const url = new URL(scannedData);
@@ -5661,7 +5783,7 @@ function showRoundEditModal(gameNumber: string) {
                     return;
                 }
                 
-                if (!appStore.state.gamesData['Brindes']) appStore.state.gamesData['Brindes'] = { winners: [] };
+                if (!appStore.state.gamesData['Brindes']) appStore.state.gamesData['Brindes'] = { winners: [], calledNumbers: [] };
                 
                 const winnerData = {
                     id: Date.now(),
@@ -5678,6 +5800,7 @@ function showRoundEditModal(gameNumber: string) {
                 nameInput.value = '';
                 descriptionInput.value = '';
                 
+                appStore.state.latestBingoTimestamp = Date.now();
                 showCongratsModal(winnerData.name, winnerData.prize);
                 appStore.debouncedSave();
             });
@@ -5793,6 +5916,108 @@ function showRoundEditModal(gameNumber: string) {
                 });
             }
 
+            const fullScreenDisplayBtn = document.getElementById('fullscreen-display-btn');
+            if (fullScreenDisplayBtn) {
+                fullScreenDisplayBtn.addEventListener('click', () => {
+                    const section = document.getElementById('draw-and-prize-section');
+                    if (section) {
+                        if (!document.fullscreenElement) {
+                            section.requestFullscreen().catch(err => {
+                                showAlert(`Erro ao entrar em tela cheia: ${err.message}`);
+                            });
+                        } else {
+                            document.exitFullscreen();
+                        }
+                    }
+                });
+            }
+
+            const showAttendeeQrBtn = document.getElementById('show-attendee-qr-btn');
+            const closeAttendeeQrBtn = document.getElementById('close-attendee-qr-btn');
+            const attendeeQrModal = document.getElementById('attendee-qr-modal');
+            const attendeeQrImage = document.getElementById('attendee-qr-image') as HTMLImageElement;
+            const attendeeQrLoading = document.getElementById('attendee-qr-loading');
+            const attendeeQrUrlText = document.getElementById('attendee-qr-url-text');
+            
+            if (showAttendeeQrBtn && closeAttendeeQrBtn && attendeeQrModal) {
+                showAttendeeQrBtn.addEventListener('click', async () => {
+                    if (!appStore.state.appConfig.onlineSyncEnabled) {
+                        appStore.state.appConfig.onlineSyncEnabled = true;
+                        appStore.debouncedSave();
+                        initFirebaseSync();
+                    }
+                    
+                    attendeeQrModal.classList.remove('hidden');
+                    
+                    if (eventId) {
+                        generateAttendeeQr();
+                    } else {
+                        if (attendeeQrUrlText) attendeeQrUrlText.textContent = "Conectando e gerando link...";
+                        // Wait for eventId to be generated by Firebase init
+                        let checks = 0;
+                        const checkInterval = setInterval(() => {
+                            if (eventId) {
+                                clearInterval(checkInterval);
+                                generateAttendeeQr();
+                            } else if (checks > 20) { // 10 seconds max wait
+                                clearInterval(checkInterval);
+                                if (attendeeQrUrlText) attendeeQrUrlText.textContent = "Falha ao gerar link. Verifique a conexão.";
+                            }
+                            checks++;
+                        }, 500);
+                    }
+                });
+
+                closeAttendeeQrBtn.addEventListener('click', () => {
+                    attendeeQrModal.classList.add('hidden');
+                });
+                
+                async function generateAttendeeQr() {
+                    if (!attendeeQrUrlText || !attendeeQrImage || !attendeeQrLoading) return;
+                    
+                    const origin = window.location.origin;
+                    let basePath = window.location.pathname;
+                    // If pathname ends with index.html, remove it to get the base dir
+                    if (basePath.endsWith('index.html')) {
+                        basePath = basePath.replace('index.html', '');
+                    }
+                    if (!basePath.endsWith('/')) {
+                        basePath += '/';
+                    }
+                    const attendeeUrl = `${origin}${basePath}attendee.html?event=${encodeURIComponent(eventId)}`;
+                    
+                    attendeeQrUrlText.textContent = attendeeUrl;
+                    (attendeeQrUrlText as HTMLAnchorElement).href = attendeeUrl;
+                    const openBtn = document.getElementById("attendee-open-new-tab-btn");
+                    if (openBtn) {
+                        openBtn.onclick = () => window.open(attendeeUrl, "_blank");
+                    }
+                    
+                    try {
+                        const qrDataUrl = await QRCode.toDataURL(attendeeUrl, { width: 300, margin: 2, color: { dark: '#4f46e5', light: '#ffffff' } });
+                        attendeeQrImage.src = qrDataUrl;
+                        attendeeQrImage.classList.remove('hidden');
+                        attendeeQrLoading.classList.add('hidden');
+                        
+                        // Check if running on dev URL and show warning
+                        if (window.location.hostname.includes('ais-dev')) {
+                            let warningEl = document.getElementById('attendee-qr-dev-warning');
+                            if (!warningEl) {
+                                warningEl = document.createElement('div');
+                                warningEl.id = 'attendee-qr-dev-warning';
+                                warningEl.className = "mt-4 p-3 bg-red-100 text-red-800 text-xs font-bold rounded-lg border border-red-300 text-center";
+                                warningEl.innerHTML = "⚠️ <strong>Atenção:</strong> Você está no ambiente de desenvolvimento (ais-dev). O QR Code exigirá login no Google se escaneado por outra pessoa. Para criar um QR Code público acessível a todos, clique no botão <strong>Share</strong> (Compartilhar) no canto superior direito e use a URL pública gerada (ais-pre).";
+                                attendeeQrImage.parentElement?.parentElement?.appendChild(warningEl);
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Failed to generate attendee QR', e);
+                        attendeeQrUrlText.textContent = "Erro ao gerar QR Code.";
+                        attendeeQrLoading.classList.add('hidden');
+                    }
+                }
+            }
+
             const fullScreenBoardBtn = document.getElementById('fullscreen-board-btn');
             if (fullScreenBoardBtn) {
                 fullScreenBoardBtn.addEventListener('click', () => {
@@ -5832,14 +6057,16 @@ function showRoundEditModal(gameNumber: string) {
                     }
                 }
                 
-                ['board-section', 'auction-section', 'draw-and-prize-section'].forEach(id => {
+                ['board-section', 'auction-section', 'draw-and-prize-section', 'display-section'].forEach(id => {
                     const section = document.getElementById(id);
                     if (!section) return;
 
-                    if (document.fullscreenElement === section) {
+                        if (document.fullscreenElement === section) {
                         section.classList.remove('rounded-2xl', 'shadow-xl');
                         section.classList.add('overflow-y-auto');
-                        if (id === 'draw-and-prize-section') {
+                        section.classList.add('h-screen');
+                        
+                        if (id === 'display-section' || id === 'draw-and-prize-section') {
                              section.classList.add('p-4');
                              const fsPrizeControls = document.getElementById('fs-prize-controls');
                              if (fsPrizeControls) {
@@ -5851,6 +6078,11 @@ function showRoundEditModal(gameNumber: string) {
                              if (fsDisplayZoomSlider) fsDisplayZoomSlider.value = appStore.state.appConfig.displayScale.toString();
                              const fsDisplayZoomValue = document.getElementById('fs-display-zoom-value');
                              if (fsDisplayZoomValue) fsDisplayZoomValue.textContent = appStore.state.appConfig.displayScale.toString();
+                             
+                             if (id === 'draw-and-prize-section') {
+                                 const auctionSection = document.getElementById('auction-section');
+                                 if (auctionSection) auctionSection.style.display = 'none';
+                             }
                         }
                         
                         document.querySelectorAll('.fixed.inset-0').forEach(el => {
@@ -5900,11 +6132,17 @@ function showRoundEditModal(gameNumber: string) {
                     } else if (!document.fullscreenElement) {
                         section.classList.add('rounded-2xl', 'shadow-xl');
                         section.classList.remove('overflow-y-auto');
-                        if (id === 'draw-and-prize-section') {
+                        section.classList.remove('h-screen');
+                        if (id === 'display-section' || id === 'draw-and-prize-section') {
                              section.classList.remove('p-4');
                              const fsPrizeControls = document.getElementById('fs-prize-controls');
                              if (fsPrizeControls) {
                                  fsPrizeControls.classList.add('hidden');
+                             }
+                             
+                             if (id === 'draw-and-prize-section') {
+                                 const auctionSection = document.getElementById('auction-section');
+                                 if (auctionSection) auctionSection.style.display = '';
                              }
                         }
                         
@@ -6159,6 +6397,28 @@ function showRoundEditModal(gameNumber: string) {
 
             document.getElementById('add-50-bid')!.addEventListener('click', () => incrementAuctionBid(50));
             document.getElementById('add-100-bid')!.addEventListener('click', () => incrementAuctionBid(100));
+            const auctionItemNameInput = document.getElementById('auction-item-name') as HTMLInputElement;
+            const auctionWinnerNameInput = document.getElementById('auction-winner-name') as HTMLInputElement;
+            const auctionBidInput = document.getElementById('auction-item-current-bid') as HTMLInputElement;
+            if (auctionItemNameInput) {
+                auctionItemNameInput.value = appStore.state.appConfig.auctionItemName || '';
+                auctionItemNameInput.addEventListener('input', (e) => { appStore.state.appConfig.auctionItemName = (e.target as HTMLInputElement).value; });
+                auctionItemNameInput.addEventListener('change', (e) => { appStore.debouncedSave(); });
+            }
+            if (auctionWinnerNameInput) {
+                auctionWinnerNameInput.value = appStore.state.appConfig.auctionWinnerName || '';
+                auctionWinnerNameInput.addEventListener('input', (e) => { appStore.state.appConfig.auctionWinnerName = (e.target as HTMLInputElement).value; });
+                auctionWinnerNameInput.addEventListener('change', (e) => { appStore.debouncedSave(); });
+            }
+            if (auctionBidInput) {
+                auctionBidInput.value = appStore.state.appConfig.auctionBid || '0';
+                updateAuctionBidDisplay(parseInt(auctionBidInput.value) || 0);
+                auctionBidInput.addEventListener('input', (e) => { 
+                    appStore.state.appConfig.auctionBid = (e.target as HTMLInputElement).value; 
+                    updateAuctionBidDisplay(parseInt(appStore.state.appConfig.auctionBid) || 0);
+                });
+                auctionBidInput.addEventListener('change', (e) => { appStore.debouncedSave(); });
+            }
             const auctionMinus50Btn = document.getElementById('auction-minus-50-btn');
             if (auctionMinus50Btn) auctionMinus50Btn.addEventListener('click', () => incrementAuctionBid(-50));
             const auctionPlus50Btn = document.getElementById('auction-plus-50-btn');
@@ -6178,6 +6438,8 @@ function showRoundEditModal(gameNumber: string) {
                 (DOMElements.auctionForm as HTMLFormElement).reset();
                  updateAuctionBidDisplay(0);
                  (document.getElementById('auction-item-current-bid') as HTMLInputElement).value = '0';
+                 appStore.state.appConfig.auctionBid = '0';
+                 appStore.debouncedSave();
             });
 
              DOMElements.auctionForm.addEventListener('submit', (e) => {
@@ -6190,7 +6452,7 @@ function showRoundEditModal(gameNumber: string) {
                     showAlert("Preencha todos os campos do leilão (item, arrematador e lance).");
                     return;
                 }
-                 if (!appStore.state.gamesData['Leilão']) appStore.state.gamesData['Leilão'] = { winners: [] };
+                 if (!appStore.state.gamesData['Leilão']) appStore.state.gamesData['Leilão'] = { winners: [], calledNumbers: [] };
                 
                 const winnerData = {
                     id: Date.now(),
@@ -6210,6 +6472,8 @@ function showRoundEditModal(gameNumber: string) {
                 (document.getElementById('auction-item-name') as HTMLInputElement).value = '';
                 (document.getElementById('auction-winner-name') as HTMLInputElement).value = '';
                 (document.getElementById('auction-item-current-bid') as HTMLInputElement).value = '0';
+                 appStore.state.appConfig.auctionBid = '0';
+                 appStore.debouncedSave();
                 updateAuctionBidDisplay(0);
 
                 appStore.debouncedSave();
@@ -6299,9 +6563,7 @@ function showRoundEditModal(gameNumber: string) {
             if (DOMElements.showCardGeneratorBtn) {
                 DOMElements.showCardGeneratorBtn.addEventListener('click', showCardGeneratorModal);
             }
-            if (document.getElementById('show-card-scanner-btn')) {
-                 document.getElementById('show-card-scanner-btn')!.addEventListener('click', showCardScannerModal);
-            }
+            
         }
 
         async function renderDigitalCardMode(uuid: string) {
@@ -6481,6 +6743,7 @@ function showRoundEditModal(gameNumber: string) {
                             </div>`;
                         }
                     } else {
+                        let lastActiveGame = '';
                         // Watch event
                         onSnapshot(doc(db, "events", cardEventId), (docSnap) => {
                            if (docSnap.exists()) {
@@ -6492,18 +6755,22 @@ function showRoundEditModal(gameNumber: string) {
                                
                                const activeGame = eventData.activeGameNumber;
                                const statusBanner = document.getElementById('realtime-status-banner')!;
-                               if (activeGame) {
-                                   statusBanner.className = "w-full max-w-md mt-16 p-2 text-center text-sm font-bold bg-green-800 text-green-100 rounded shadow";
-                                   statusBanner.innerHTML = `🟢 Rodada Ativa! Carregando sincronização...`;
-                                   (window as any).currentActiveGame = activeGame;
+                               
+                               if (activeGame !== lastActiveGame) {
+                                   lastActiveGame = activeGame;
                                    
-                                   // Unsub previous game listeners
-                                   if ((window as any).currentGameUnsub) {
-                                       (window as any).currentGameUnsub();
-                                   }
-                                   
-                                   // Watch active game
-                                   (window as any).currentGameUnsub = onSnapshot(doc(db, `events/${cardEventId}/games`, activeGame), (gameSnap) => {
+                                   if (activeGame) {
+                                       statusBanner.className = "w-full max-w-md mt-16 p-2 text-center text-sm font-bold bg-green-800 text-green-100 rounded shadow";
+                                       statusBanner.innerHTML = `🟢 Rodada Ativa! Carregando sincronização...`;
+                                       (window as any).currentActiveGame = activeGame;
+                                       
+                                       // Unsub previous game listeners
+                                       if ((window as any).currentGameUnsub) {
+                                           (window as any).currentGameUnsub();
+                                       }
+                                       
+                                       // Watch active game
+                                       (window as any).currentGameUnsub = onSnapshot(doc(db, `events/${cardEventId}/games`, activeGame), (gameSnap) => {
                                        if (gameSnap.exists()) {
                                             const gameData = gameSnap.data();
                                             statusBanner.innerHTML = `🟢 Sorteio Online: <strong>${gameData.name || activeGame}</strong>`;
@@ -6539,6 +6806,7 @@ function showRoundEditModal(gameNumber: string) {
                                       cell.style.borderColor = '';
                                    });
                                }
+                               }
                            }
                         });
                     }
@@ -6550,6 +6818,14 @@ function showRoundEditModal(gameNumber: string) {
         document.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
             const cardToPlay = urlParams.get('card');
+            const viewMode = urlParams.get('view');
+            const eventParam = urlParams.get('event');
+
+            if (viewMode === 'attendee' && eventParam) {
+                const basePath = window.location.pathname.replace(/\/index\.html$/, '/').replace(/\/?$/, '/');
+                window.location.href = `${window.location.origin}${basePath}attendee.html?event=${encodeURIComponent(eventParam)}`;
+                return;
+            }
 
             appStore.loadInitialState().then(() => {
                 console.log("Estado inicial carregado.");

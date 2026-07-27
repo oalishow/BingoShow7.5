@@ -17,7 +17,7 @@ export default defineConfig(({ mode }) => {
         VitePWA({
           registerType: 'prompt',
           devOptions: {
-            enabled: true,
+            enabled: false,
             type: 'module',
           },
           workbox: {
@@ -150,6 +150,10 @@ export default defineConfig(({ mode }) => {
       },
       build: {
         rollupOptions: {
+          input: {
+            main: path.resolve(__dirname, 'index.html'),
+            attendee: path.resolve(__dirname, 'attendee.html')
+          },
           output: {
             entryFileNames: `assets/[name]-[hash]-${buildTimestamp}.js`,
             chunkFileNames: `assets/[name]-[hash]-${buildTimestamp}.js`,
