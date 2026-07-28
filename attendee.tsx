@@ -8,7 +8,7 @@ function getLetterForNumber(number: number): string {
 }
 
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, GoogleAuthProvider, FacebookAuthProvider, signInWithPopup } from 'firebase/auth';
+import { getAuth, signInAnonymously, GoogleAuthProvider, FacebookAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'firebase/auth';
 import { getFirestore, doc, onSnapshot, clearIndexedDbPersistence, collection, addDoc } from 'firebase/firestore';
 import QRCode from 'qrcode';
 import firebaseConfig from './firebase-applet-config.json';
@@ -867,15 +867,102 @@ document.addEventListener('DOMContentLoaded', () => {
     const authModal = document.getElementById('attendee-auth-modal');
     const closeAuthBtn = document.getElementById('close-auth-btn');
     const loginGoogleBtn = document.getElementById('login-google-btn');
-    const loginFacebookBtn = document.getElementById('login-facebook-btn');
+    const registerAnonBtn = document.getElementById('register-anon-btn');
     const authProvidersSection = document.getElementById('auth-providers-section');
     const cpfSection = document.getElementById('cpf-section');
+    const nameInput = document.getElementById('auth-name-input') as HTMLInputElement;
     const cpfInput = document.getElementById('auth-cpf-input') as HTMLInputElement;
     const lgpdCheckbox = document.getElementById('lgpd-consent-checkbox') as HTMLInputElement;
     const confirmAuthBtn = document.getElementById('confirm-auth-btn') as HTMLButtonElement;
 
     let attendeeAuthenticated = false;
-    let attendeeUserData: any = null;
+    // Custom Modal Helpers
+function showAttendeeAlert(message: string) {
+    const modal = document.getElementById('attendee-alert-modal');
+    const msgEl = document.getElementById('attendee-alert-message');
+    const okBtn = document.getElementById('attendee-alert-ok-btn');
+    
+    if (modal && msgEl && okBtn) {
+        msgEl.textContent = message;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        
+        const close = () => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            okBtn.removeEventListener('click', close);
+        };
+        okBtn.addEventListener('click', close);
+    } else {
+        alert(message);
+    }
+}
+
+function showAttendeeConfirm(message: string, onConfirm: () => void) {
+    const modal = document.getElementById('attendee-confirm-modal');
+    const msgEl = document.getElementById('attendee-confirm-message');
+    const okBtn = document.getElementById('attendee-confirm-ok-btn');
+    const cancelBtn = document.getElementById('attendee-confirm-cancel-btn');
+    
+    if (modal && msgEl && okBtn && cancelBtn) {
+        msgEl.textContent = message;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        
+        const close = () => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            okBtn.removeEventListener('click', handleOk);
+            cancelBtn.removeEventListener('click', close);
+        };
+        
+        const handleOk = () => {
+            close();
+            onConfirm();
+        };
+        
+        okBtn.addEventListener('click', handleOk);
+        cancelBtn.addEventListener('click', close);
+    } else {
+        if (confirm(message)) {
+            onConfirm();
+        }
+    }
+}
+
+let attendeeUserData: any = null;
+    const logoutBtn = document.getElementById('attendee-logout-btn');
+    
+    onAuthStateChanged(auth, (user) => {
+        if (user && !user.isAnonymous) {
+            attendeeAuthenticated = true;
+            attendeeUserData = user;
+            if (logoutBtn) logoutBtn.classList.remove('hidden');
+            
+            const currentTitle = (window as any).currentBingoTitle === 'AJUDE' ? '🔔 BATI AJUDE!' : '🔔 BATI BINGO!';
+            if (shoutBingoBtn) shoutBingoBtn.innerHTML = currentTitle;
+        } else {
+            attendeeAuthenticated = false;
+            attendeeUserData = null;
+            if (logoutBtn) logoutBtn.classList.add('hidden');
+            const currentTitle = (window as any).currentBingoTitle === 'AJUDE' ? '🚨 BATI AJUDE!' : '🚨 BINGO!';
+            if (shoutBingoBtn) shoutBingoBtn.innerHTML = currentTitle;
+        }
+    });
+    
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+            showAttendeeConfirm("Deseja realmente desconectar sua conta? Você precisará entrar novamente para gritar BINGO.", async () => {
+                try {
+                    await signOut(auth);
+                    await signInAnonymously(auth);
+                    showAttendeeAlert("Conta desconectada.");
+                } catch (e) {
+                    console.error("Erro ao desconectar", e);
+                }
+            });
+        });
+    }
 
     if (shoutBingoBtn) {
         shoutBingoBtn.addEventListener('click', () => {
@@ -883,7 +970,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 authModal?.classList.remove('hidden');
                 authModal?.classList.add('flex');
             } else {
-                sendBingoClaim();
+                showAttendeeConfirm("Você tem certeza que quer gritar BINGO? Evite toques acidentais para não atrapalhar o andamento do jogo.", () => {
+                    sendBingoClaim();
+                });
             }
         });
     }
@@ -903,7 +992,8 @@ document.addEventListener('DOMContentLoaded', () => {
             attendeeAuthenticated = true;
             authModal?.classList.add('hidden');
             authModal?.classList.remove('flex');
-            alert("Botão habilitado com sucesso!");
+            if (logoutBtn) logoutBtn.classList.remove('hidden');
+            showAttendeeAlert("Botão habilitado com sucesso!");
             
             const currentTitle = (window as any).currentBingoTitle === 'AJUDE' ? '🔔 BATI AJUDE!' : '🔔 BATI BINGO!';
             shoutBingoBtn.innerHTML = currentTitle;
@@ -915,20 +1005,42 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (e.message) {
                 errorMsg = e.message;
             }
-            alert("Erro ao fazer login: " + errorMsg);
+            showAttendeeAlert("Erro ao fazer login: " + errorMsg);
         }
     };
 
     loginGoogleBtn?.addEventListener('click', () => handleLogin(new GoogleAuthProvider()));
-    loginFacebookBtn?.addEventListener('click', () => handleLogin(new FacebookAuthProvider()));
+    
+    registerAnonBtn?.addEventListener('click', () => {
+        if (nameInput.value.trim().length > 0 && cpfInput.value.length === 14 && lgpdCheckbox.checked) {
+            attendeeAuthenticated = true;
+            attendeeUserData = {
+                uid: 'anon-' + Math.random().toString(36).substring(2, 9),
+                isAnonymous: true, // We treat it as pseudo-authenticated for UI, real anonymous auth is active
+                displayName: nameInput.value.trim(),
+                cpf: cpfInput.value
+            };
+            authModal?.classList.add('hidden');
+            authModal?.classList.remove('flex');
+            if (logoutBtn) logoutBtn.classList.remove('hidden');
+            
+            const currentTitle = (window as any).currentBingoTitle === 'AJUDE' ? '🔔 BATI AJUDE!' : '🔔 BATI BINGO!';
+            if (shoutBingoBtn) shoutBingoBtn.innerHTML = currentTitle;
+            showAttendeeAlert("Cadastro realizado com sucesso!");
+        } else {
+            showAttendeeAlert("Preencha todos os campos e aceite os termos.");
+        }
+    });
 
     const checkFormValidity = () => {
-        if (cpfInput.value.length === 14 && lgpdCheckbox.checked) {
+        if (cpfInput.value.length === 14 && lgpdCheckbox.checked && nameInput.value.trim().length > 0) {
             authProvidersSection?.classList.remove('opacity-50', 'pointer-events-none');
         } else {
             authProvidersSection?.classList.add('opacity-50', 'pointer-events-none');
         }
     };
+    
+    nameInput?.addEventListener('input', checkFormValidity);
 
     cpfInput?.addEventListener('input', () => {
         let val = cpfInput.value.replace(/\D/g, '');
@@ -949,7 +1061,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
             const targetEventId = urlParams.get('event');
             if (!targetEventId) {
-                alert("ID do evento não encontrado.");
+                showAttendeeAlert("ID do evento não encontrado.");
                 return;
             }
             const activeGame = (window as any).currentActiveGame || 'default';
@@ -962,14 +1074,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 uuid: 'public-' + attendeeUserData.uid,
                 series: 0,
                 name: attendeeUserData.displayName || 'Público',
-                cpf: cpfInput?.value || '',
+                cpf: attendeeUserData.cpf || cpfInput?.value || '',
                 timestamp: Date.now()
             });
 
             shoutBingoBtn.innerHTML = "✅ ENVIADO!";
             shoutBingoBtn.classList.remove('from-red-600', 'to-rose-600');
             shoutBingoBtn.classList.add('from-emerald-600', 'to-green-600');
-            alert("BINGO enviado para a banca! Aguarde conferência oficial.");
+            showAttendeeAlert("BINGO enviado para a banca! Aguarde conferência oficial.");
 
             setTimeout(() => {
                 const currentTitle = (window as any).currentBingoTitle === 'AJUDE' ? '🔔 BATI AJUDE!' : '🔔 BATI BINGO!';
@@ -982,7 +1094,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e: any) {
             console.error(e);
             const errMsg = e.message || "Tente novamente.";
-            alert("Erro ao enviar BINGO: " + errMsg);
+            showAttendeeAlert("Erro ao enviar BINGO: " + errMsg);
             const currentTitle = (window as any).currentBingoTitle === 'AJUDE' ? '🚨 AJUDE!' : '🚨 BINGO!';
             shoutBingoBtn.innerHTML = currentTitle;
             shoutBingoBtn.disabled = false;

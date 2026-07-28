@@ -6,7 +6,7 @@ import QRCode from 'qrcode';
 import jsQR from 'jsqr';
 import { registerSW } from 'virtual:pwa-register';
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, signInAnonymously, onAuthStateChanged, FacebookAuthProvider, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 import { getFirestore, doc, setDoc, onSnapshot, collection, getDoc, getDocs, writeBatch, clearIndexedDbPersistence } from 'firebase/firestore';
 import firebaseConfig from './firebase-applet-config.json';
 import { sounds } from './audio';
@@ -40,6 +40,7 @@ let eventId = '';
                     "Espetinho - R$ 8,00", "Pastel - R$ 6,00", "Porção de Fritas - R$ 15,00"
                 ],
                 drawnPrizeNumbers: [] as number[],
+                blockedUsers: [] as string[],
                 versionHistory: `**v7.6.0 (Atual)**
 - **MODO CLARO:** Melhoria no contraste de cores para os nomes de patrocinadores e itens do cardápio no modo claro.
 - **PRIVACIDADE DE EVENTO:** O ID do evento online foi ocultado do status por padrão, sendo revelado apenas ao clicar no indicador "Modo Online".
@@ -124,7 +125,7 @@ let eventId = '';
                     enableSoundEffects: true,
                     enableModalAutoclose: true,
                     modalAutocloseSeconds: 3,
-                    sponsorDisplaySeconds: 8,
+                    sponsorDisplaySeconds: 10,
                     showSponsorCountdown: true,
                     sponsorTransitionEffect: 'fade',
                     showMenuInBreak: true,
@@ -366,6 +367,7 @@ let eventId = '';
                     activeGameNumber: this.state.activeGameNumber,
                     menuItems: this.state.menuItems,
                     drawnPrizeNumbers: this.state.drawnPrizeNumbers,
+                    blockedUsers: this.state.blockedUsers,
                     versionText: currentVersion,
                     versionHistory: this.state.versionHistory,
                     appConfig: this.state.appConfig,
@@ -390,6 +392,7 @@ let eventId = '';
                 this.state.activeGameNumber = state.activeGameNumber || null;
                 this.state.menuItems = state.menuItems || [ "Refrigerante - R$ 5,00", "Cerveja - R$ 7,00", "Água - R$ 3,00", "Espetinho - R$ 8,00", "Pastel - R$ 6,00", "Porção de Fritas - R$ 15,00" ];
                 this.state.drawnPrizeNumbers = state.drawnPrizeNumbers || [];
+                this.state.blockedUsers = state.blockedUsers || [];
                 this.state.versionHistory = state.versionHistory || this.state.versionHistory;
                 const loadedConfig = state.appConfig || {};
                 
@@ -1277,10 +1280,16 @@ function populateSettingsShortcutsTab() {
                             <button id="tab-sponsors" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500">${appLabels.settingsTabSponsors}</button>
                             <button id="tab-labels" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500">${appLabels.settingsTabLabels}</button>
                             <button id="tab-shortcuts" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500">${appLabels.settingsTabShortcuts}</button>
+                            <button id="tab-security" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500">Segurança</button>
                         </nav>
                     </div>
 
                     <div id="settings-content-container" class="max-h-[60vh] overflow-y-auto pr-4">
+                        <div id="tab-content-security" class="hidden space-y-6 text-left">
+                            <h3 class="text-xl font-bold text-slate-700 dark:text-slate-300 mb-2">Usuários Bloqueados</h3>
+                            <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">Gerencie os usuários que foram bloqueados por falsos alertas de BINGO.</p>
+                            <div id="blocked-users-list" class="space-y-2"></div>
+                        </div>
                         <div id="tab-content-appearance" class="space-y-6 text-left">
                            <div class="border-b border-gray-700 pb-6">
                                 <label class="block text-xl font-bold text-slate-700 dark:text-slate-300 mb-2">Nome do Programa</label>
@@ -1318,6 +1327,22 @@ function populateSettingsShortcutsTab() {
                             <div class="border-b border-slate-300 dark:border-gray-700 pb-6 mt-6">
                                 <h3 class="text-xl font-bold text-slate-700 dark:text-slate-300 mb-2">🎈 Etapa 2: Online Sync</h3>
                                 <p class="text-sm text-slate-600 dark:text-slate-400 mb-2">Ative o modo Online para permitir que os jogadores acessem suas cartelas diretamente pelo celular escaneando o QR Code. Ao ativar, você precisará aguardar a sincronização (host online).</p>
+                                
+                                <div class="flex flex-col sm:flex-row gap-3 mb-4">
+                                    <button id="host-login-facebook-btn" class="flex items-center justify-center gap-2 bg-[#1877F2] text-white hover:bg-[#166FE5] py-2 px-4 rounded-lg font-bold transition-colors shadow-sm">
+                                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                                        Logar Facebook
+                                    </button>
+                                    <button id="host-login-google-btn" class="flex items-center justify-center gap-2 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 py-2 px-4 rounded-lg font-bold transition-colors shadow-sm">
+                                        <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                                        Logar Google
+                                    </button>
+                                    <button id="host-logout-btn" class="hidden flex items-center justify-center gap-2 bg-red-600 text-white hover:bg-red-700 py-2 px-4 rounded-lg font-bold transition-colors shadow-sm">
+                                        Desconectar
+                                    </button>
+                                </div>
+                                <div id="host-user-info" class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-4 hidden"></div>
+
                                 <div class="flex items-center gap-3 bg-indigo-100 dark:bg-indigo-900/50 p-3 rounded-lg border border-indigo-200 dark:border-indigo-800 mb-2">
                                     <input type="checkbox" id="online-sync-toggle" class="h-5 w-5 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500">
                                     <label for="online-sync-toggle" class="text-slate-800 dark:text-indigo-200 font-bold">Ativar Sincronização em Nuvem</label>
@@ -1407,8 +1432,8 @@ function populateSettingsShortcutsTab() {
                                <h3 class="text-xl font-bold text-slate-700 dark:text-slate-300 mb-2">Exibição no Telão (Intervalo/Fim)</h3>
                                <div class="space-y-4">
                                    <div>
-                                       <label for="sponsor-display-timer" class="block text-sm font-bold text-slate-600 dark:text-slate-400 mb-1">Tempo de exibição por patrocinador (<span id="sponsor-display-value">8</span>s)</label>
-                                       <input type="range" id="sponsor-display-timer" min="3" max="30" value="8" class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer range-lg">
+                                       <label for="sponsor-display-timer" class="block text-sm font-bold text-slate-600 dark:text-slate-400 mb-1">Tempo de exibição por patrocinador (<span id="sponsor-display-value">10</span>s)</label>
+                                       <input type="range" id="sponsor-display-timer" min="3" max="30" value="10" class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer range-lg">
                                    </div>
                                    <div>
                                        <label for="sponsor-transition-effect" class="block text-sm font-bold text-slate-600 dark:text-slate-400 mb-1">Efeito de transição</label>
@@ -2077,7 +2102,7 @@ async function showFinalWinnersModal(isEndOfEvent: boolean = true) {
         };
         
         cycleFinalSponsors();
-        const cycleTime = (appStore.state.appConfig.sponsorDisplaySeconds || 8) * 1000;
+        const cycleTime = (appStore.state.appConfig.sponsorDisplaySeconds || 10) * 1000;
         finalSponsorsInterval = setInterval(cycleFinalSponsors, cycleTime);
     } else {
         if (sponsorsSection) sponsorsSection.classList.add('hidden');
@@ -2648,7 +2673,7 @@ function showSettingsModal() {
     DOMElements.settingsModal.innerHTML = getModalTemplates().settings;
     DOMElements.settingsModal.classList.remove('hidden');
 
-    const tabs = ['appearance', 'sponsors', 'labels', 'shortcuts'];
+    const tabs = ['appearance', 'sponsors', 'labels', 'shortcuts', 'security'];
     
     const switchTab = (targetTabId: string) => {
         tabs.forEach(tabId => {
@@ -2664,6 +2689,10 @@ function showSettingsModal() {
     tabs.forEach(tabId => {
         document.getElementById(`tab-${tabId}`)!.addEventListener('click', () => switchTab(tabId));
     });
+
+    if (typeof (window as any).updateBlockedUsersUI === 'function') {
+        (window as any).updateBlockedUsersUI();
+    }
 
     // --- Appearance Tab ---
     const appNameInput = document.getElementById('app-name-input') as HTMLInputElement;
@@ -2844,6 +2873,68 @@ function showSettingsModal() {
             appStore.debouncedSave();
         });
     }
+
+    const updateHostAuthUI = () => {
+        const loginBtn = document.getElementById('host-login-facebook-btn');
+        const loginGoogleBtn = document.getElementById('host-login-google-btn');
+        const logoutBtn = document.getElementById('host-logout-btn');
+        const userInfo = document.getElementById('host-user-info');
+        
+        if (firebaseUser && !firebaseUser.isAnonymous) {
+            if (loginBtn) loginBtn.classList.add('hidden');
+            if (loginGoogleBtn) loginGoogleBtn.classList.add('hidden');
+            if (logoutBtn) logoutBtn.classList.remove('hidden');
+            if (userInfo) {
+                userInfo.textContent = `Logado como: ${firebaseUser.displayName || 'Usuário'} (${firebaseUser.email || 'N/A'})`;
+                userInfo.classList.remove('hidden');
+            }
+        } else {
+            if (loginBtn) loginBtn.classList.remove('hidden');
+            if (loginGoogleBtn) loginGoogleBtn.classList.remove('hidden');
+            if (logoutBtn) logoutBtn.classList.add('hidden');
+            if (userInfo) userInfo.classList.add('hidden');
+        }
+    };
+    
+    updateHostAuthUI();
+    
+    document.getElementById('host-login-facebook-btn')?.addEventListener('click', async () => {
+        try {
+            const provider = new FacebookAuthProvider();
+            await signInWithPopup(auth, provider);
+            // onAuthStateChanged will handle the rest
+            updateHostAuthUI();
+            showAlert("Login com Facebook realizado com sucesso!");
+        } catch (e: any) {
+            console.error("Login Facebook Host erro:", e);
+            showAlert("Erro ao logar com Facebook: " + (e.message || String(e)));
+        }
+    });
+
+    document.getElementById('host-login-google-btn')?.addEventListener('click', async () => {
+        try {
+            const provider = new GoogleAuthProvider();
+            await signInWithPopup(auth, provider);
+            // onAuthStateChanged will handle the rest
+            updateHostAuthUI();
+            showAlert("Login com Google realizado com sucesso!");
+        } catch (e: any) {
+            console.error("Login Google Host erro:", e);
+            showAlert("Erro ao logar com Google: " + (e.message || String(e)));
+        }
+    });
+
+    document.getElementById('host-logout-btn')?.addEventListener('click', async () => {
+        try {
+            await signOut(auth);
+            await signInAnonymously(auth); // re-authenticate as anonymous
+            updateHostAuthUI();
+            showAlert("Desconectado com sucesso.");
+        } catch (e: any) {
+            console.error("Logout erro:", e);
+            showAlert("Erro ao desconectar.");
+        }
+    });
 
     const syncToggle = document.getElementById('online-sync-toggle') as HTMLInputElement;
     syncToggle.checked = appConfig.onlineSyncEnabled === true;
@@ -3949,7 +4040,7 @@ Deseja MANTER o seu QR Code/Link atual para o público?
             confirmBtn.addEventListener('click', confirmAndAnnounce);
             cancelBtn.addEventListener('click', cancelDraw);
 
-            let currentCountdownValue = appConfig.modalAutocloseSeconds;
+            let currentCountdownValue = appConfig.sponsorDisplaySeconds || 10;
             
             const startCountdown = (seconds: number) => {
                 clearTimeout(floatingNumberTimeout as ReturnType<typeof setTimeout>);
@@ -4012,7 +4103,11 @@ Deseja MANTER o seu QR Code/Link atual para o público?
                 btn.addEventListener('click', (e) => {
                     const speed = parseInt((e.target as HTMLElement).dataset.speed!);
                     currentCountdownValue = speed;
-                    appStore.state.appConfig.modalAutocloseSeconds = speed;
+                    appStore.state.appConfig.sponsorDisplaySeconds = speed;
+                    const sponsorDisplayTimer = document.getElementById('sponsor-display-timer') as HTMLInputElement;
+                    const sponsorDisplayValue = document.getElementById('sponsor-display-value') as HTMLElement;
+                    if (sponsorDisplayTimer) sponsorDisplayTimer.value = speed.toString();
+                    if (sponsorDisplayValue) sponsorDisplayValue.textContent = speed.toString();
                     appStore.debouncedSave();
                     updateSpeedButtons();
                     startCountdown(speed);
@@ -4172,6 +4267,39 @@ Deseja MANTER o seu QR Code/Link atual para o público?
             }
         }
 
+        ;(window as any).unblockUser = (uuid: string) => {
+            appStore.state.blockedUsers = appStore.state.blockedUsers.filter((u: string) => u !== uuid);
+            appStore.debouncedSave();
+            showAlert("Usuário desbloqueado com sucesso.");
+            updateBlockedUsersUI();
+        };
+        
+        ;(window as any).updateBlockedUsersUI = function updateBlockedUsersUI() {
+            const listEl = document.getElementById('blocked-users-list');
+            if (!listEl) return;
+            
+            if (appStore.state.blockedUsers.length === 0) {
+                listEl.innerHTML = '<p class="text-sm text-slate-500 italic">Nenhum usuário bloqueado.</p>';
+                return;
+            }
+            
+            listEl.innerHTML = appStore.state.blockedUsers.map((uuid: string) => `
+                <div class="flex justify-between items-center bg-gray-100 dark:bg-gray-700 p-3 rounded">
+                    <span class="text-sm font-mono text-gray-800 dark:text-gray-200">${uuid}</span>
+                    <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded text-xs font-bold" onclick="window.unblockUser('${uuid}')">Desbloquear</button>
+                </div>
+            `).join('');
+        }
+
+        ;(window as any).blockUser = (uuid: string) => {
+            if (!appStore.state.blockedUsers.includes(uuid)) {
+                appStore.state.blockedUsers.push(uuid);
+                appStore.debouncedSave();
+                showAlert("Usuário bloqueado com sucesso. Ele não poderá mais enviar alertas de BINGO.");
+                updateBlockedUsersUI();
+            }
+        };
+
         function showBingoClaimNotification(series: number, uuid: string, gameNumber: string, docData?: any) {
             const audio = new Audio('/bingo-alert.mp3');
             audio.play().catch(e => console.log('Audio blocked', e));
@@ -4201,6 +4329,7 @@ Deseja MANTER o seu QR Code/Link atual para o público?
                     <div class="text-lg text-center mx-1 mb-1 leading-tight"><span class="bg-yellow-400 text-black px-2 py-1 mx-1 rounded inline-block shadow-sm">${name}</span> bateu pelo Painel Público!</div>
                     <div class="text-xs text-center text-green-100 mb-2">CPF: ${cpf}</div>
                     <button class="bg-white text-green-700 hover:bg-gray-100 py-3 mt-1 w-full rounded-lg font-bold shadow uppercase transition-all active:scale-95" onclick="this.parentElement.remove()">Verificar Física Manualmente</button>
+                    <button class="text-white hover:text-red-200 text-xs mt-1 underline" onclick="if(confirm('Bloquear este jogador? Ele não poderá mais gritar bingo.')) { window.blockUser('${uuid}'); this.parentElement.remove(); }">Bloquear Jogador (Falso Bingo)</button>
                 `;
             } else {
                 el.innerHTML = `
@@ -4211,6 +4340,7 @@ Deseja MANTER o seu QR Code/Link atual para o público?
                     <div class="text-3xl font-black uppercase text-center mt-1 drop-shadow-md">BINGO!</div>
                     <div class="text-lg text-center mx-1 mb-1 leading-tight">A cartela nº <span class="bg-yellow-400 text-black px-2 py-1 mx-1 rounded inline-block shadow-sm">${cardStr}</span> bateu lá do celular!</div>
                     <button class="bg-white text-green-700 hover:bg-gray-100 py-3 mt-1 w-full rounded-lg font-bold shadow uppercase transition-all active:scale-95" onclick="window.pauseDrawAndVerify('${uuid}', '${cardStr}'); this.parentElement.remove()">Fazer Checagem Oficial</button>
+                    <button class="text-white hover:text-red-200 text-xs mt-1 underline" onclick="if(confirm('Bloquear este jogador? Ele não poderá mais gritar bingo.')) { window.blockUser('${uuid}'); this.parentElement.remove(); }">Bloquear Jogador (Falso Bingo)</button>
                 `;
             }
             
@@ -4330,7 +4460,9 @@ Deseja MANTER o seu QR Code/Link atual para o público?
                    snapshot.docChanges().forEach((change) => {
                        if (change.type === 'added') {
                            const docData = change.doc.data();
-                           showBingoClaimNotification(docData.series, docData.uuid, gameNumber, docData);
+                           if (!appStore.state.blockedUsers.includes(docData.uuid)) {
+                               showBingoClaimNotification(docData.series, docData.uuid, gameNumber, docData);
+                           }
                        }
                    });
                });
@@ -5251,7 +5383,7 @@ Deseja MANTER o seu QR Code/Link atual para o público?
             if (intervalClockInterval) clearInterval(intervalClockInterval);
             if (breakConfettiInterval) clearInterval(breakConfettiInterval);
             
-            const cycleTime = (appConfig.sponsorDisplaySeconds || 8) * 1000;
+            const cycleTime = (appConfig.sponsorDisplaySeconds || 10) * 1000;
             intervalContentInterval = setInterval(updateContent, cycleTime);
             intervalClockInterval = setInterval(updateClock, 1000);
             breakConfettiInterval = setInterval(triggerConfetti, 3500);
