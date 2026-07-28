@@ -4781,6 +4781,38 @@ Deseja MANTER o seu QR Code/Link atual para o público?
             return null;
         }
 
+
+        function updateSimpleControllerUI() {
+            if (!DOMElements.scOverlay || DOMElements.scOverlay.classList.contains('hidden')) return;
+            const { activeGameNumber, gamesData } = appStore.state;
+            if (!activeGameNumber || !gamesData[activeGameNumber]) {
+                if (DOMElements.scGameName) DOMElements.scGameName.textContent = "Nenhuma Rodada Ativa";
+                if (DOMElements.scLastNumber) DOMElements.scLastNumber.textContent = "--";
+                if (DOMElements.scRecents) DOMElements.scRecents.innerHTML = '<span class="text-slate-500 text-sm">Nenhum</span>';
+                if (DOMElements.scDrawnCount) DOMElements.scDrawnCount.textContent = '0/75';
+                return;
+            }
+            const game = gamesData[activeGameNumber];
+            if (DOMElements.scGameName) DOMElements.scGameName.textContent = game.name || `Rodada ${activeGameNumber}`;
+            
+            const called = game.calledNumbers;
+            if (called.length > 0) {
+                const last = called[called.length - 1];
+                if (DOMElements.scLastNumber) DOMElements.scLastNumber.innerHTML = `<span class="text-6xl text-teal-400 font-bold mr-2">${getLetterForNumber(last)}</span>${last}`;
+            } else {
+                if (DOMElements.scLastNumber) DOMElements.scLastNumber.textContent = "--";
+            }
+            
+            if (DOMElements.scDrawnCount) DOMElements.scDrawnCount.textContent = `${called.length}/75`;
+            
+            if (called.length > 1) {
+                const recent = called.slice(0, -1).reverse().slice(0, 5); // Last 5 except the very last one
+                if (DOMElements.scRecents) DOMElements.scRecents.innerHTML = recent.map(num => `<span class="bg-slate-700 text-white px-2 py-1 rounded shadow-sm text-base border border-slate-600">${getLetterForNumber(num)} ${num}</span>`).join('');
+            } else {
+                if (DOMElements.scRecents) DOMElements.scRecents.innerHTML = '<span class="text-slate-500 text-sm">Nenhum</span>';
+            }
+        }
+
         function updateCurrentNumberDisplay() {
             const { activeGameNumber, gamesData, appConfig } = appStore.state;
             const currentNumberEl = DOMElements.currentNumberEl as HTMLElement;
@@ -4815,6 +4847,7 @@ Deseja MANTER o seu QR Code/Link atual para o público?
             } else {
                 currentNumberEl.style.visibility = 'hidden';
             }
+            if (typeof updateSimpleControllerUI === 'function') updateSimpleControllerUI();
         }
 
         function showVerificationPanel() {
@@ -6530,6 +6563,35 @@ function showRoundEditModal(gameNumber: string) {
             });
             
             document.getElementById('prize-draw-random-btn')!.addEventListener('click', drawRandomPrize);
+
+            if (DOMElements.simpleControllerBtn) {
+                DOMElements.simpleControllerBtn.addEventListener('click', () => {
+                    if (DOMElements.scOverlay) {
+                        DOMElements.scOverlay.classList.remove('hidden');
+                        DOMElements.scOverlay.classList.add('flex');
+                        updateSimpleControllerUI();
+                    }
+                });
+            }
+            if (DOMElements.scCloseBtn) {
+                DOMElements.scCloseBtn.addEventListener('click', () => {
+                    DOMElements.scOverlay?.classList.add('hidden');
+                    DOMElements.scOverlay?.classList.remove('flex');
+                });
+            }
+            if (DOMElements.scDrawBtn) {
+                DOMElements.scDrawBtn.addEventListener('click', () => {
+                    drawNumber(true);
+                });
+            }
+            if (DOMElements.scClaimsBtn) {
+                DOMElements.scClaimsBtn.addEventListener('click', () => {
+                    DOMElements.scOverlay?.classList.add('hidden');
+                    DOMElements.scOverlay?.classList.remove('flex');
+                    document.getElementById('bingo-claims-container')?.scrollIntoView({ behavior: 'smooth' });
+                });
+            }
+
             DOMElements.shareBtn.addEventListener('click', () => showProofOptionsModal());
             DOMElements.endEventBtn.addEventListener('click', () => showFinalWinnersModal(true));
             DOMElements.resetEventBtn.addEventListener('click', () => {

@@ -22,6 +22,7 @@ export default defineConfig(({ mode }) => {
           },
           workbox: {
             cleanupOutdatedCaches: true,
+            navigateFallbackDenylist: [/attendee\.html/],
             globPatterns: ['**/*.{js,css,html,ico,png,svg,json,tsx,ts}'],
             runtimeCaching: [
               {
