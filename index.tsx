@@ -41,7 +41,11 @@ let eventId = '';
                 ],
                 drawnPrizeNumbers: [] as number[],
                 blockedUsers: [] as string[],
-                versionHistory: `**v7.6.0 (Atual)**
+                versionHistory: `**v7.8.0 (Atual)**
+- **PAINEL SIMPLES:** O painel de números no controlador simples foi atualizado para utilizar o mesmo estilo em grade do painel público, facilitando o acompanhamento e visualização pelo celular.
+- **ESTABILIDADE:** Correção de loops e bugs no sistema de atualização do PWA em aparelhos móveis.
+
+**v7.6.0**
 - **MODO CLARO:** Melhoria no contraste de cores para os nomes de patrocinadores e itens do cardápio no modo claro.
 - **PRIVACIDADE DE EVENTO:** O ID do evento online foi ocultado do status por padrão, sendo revelado apenas ao clicar no indicador "Modo Online".
 - **ATUALIZAÇÃO DE CRÉDITOS:** Atualização da Inteligência Artificial para Gemini 3.1 PRO.
@@ -4788,28 +4792,142 @@ Deseja MANTER o seu QR Code/Link atual para o público?
             if (!activeGameNumber || !gamesData[activeGameNumber]) {
                 if (DOMElements.scGameName) DOMElements.scGameName.textContent = "Nenhuma Rodada Ativa";
                 if (DOMElements.scLastNumber) DOMElements.scLastNumber.textContent = "--";
-                if (DOMElements.scRecents) DOMElements.scRecents.innerHTML = '<span class="text-slate-500 text-sm">Nenhum</span>';
+                const scBoard = document.getElementById('sc-board-rows'); if (scBoard) scBoard.innerHTML = '<span class="text-slate-500 text-sm">Nenhum</span>';
                 if (DOMElements.scDrawnCount) DOMElements.scDrawnCount.textContent = '0/75';
                 return;
             }
             const game = gamesData[activeGameNumber];
             if (DOMElements.scGameName) DOMElements.scGameName.textContent = game.name || `Rodada ${activeGameNumber}`;
             
+            const appConfig = appStore.state.appConfig;
             const called = game.calledNumbers;
+            
+            const scLastNumberBall = document.getElementById('sc-last-number-ball');
             if (called.length > 0) {
-                const last = called[called.length - 1];
-                if (DOMElements.scLastNumber) DOMElements.scLastNumber.innerHTML = `<span class="text-6xl text-teal-400 font-bold mr-2">${getLetterForNumber(last)}</span>${last}`;
+                const lastNum = called[called.length - 1];
+                const letter = getLetterForNumber(lastNum);
+                const activeColor = game.color || '#14b8a6';
+                if (scLastNumberBall) {
+                    scLastNumberBall.style.borderColor = activeColor;
+                }
+                if (DOMElements.scLastNumber) {
+                    DOMElements.scLastNumber.innerHTML = `<span>${letter}</span><span class="ml-1">${lastNum}</span>`;
+                    DOMElements.scLastNumber.classList.remove('text-slate-600');
+                    DOMElements.scLastNumber.classList.add('text-white');
+                }
             } else {
-                if (DOMElements.scLastNumber) DOMElements.scLastNumber.textContent = "--";
+                if (scLastNumberBall) {
+                    scLastNumberBall.style.borderColor = '#475569';
+                }
+                if (DOMElements.scLastNumber) {
+                    DOMElements.scLastNumber.innerHTML = `--`;
+                    DOMElements.scLastNumber.classList.remove('text-white');
+                    DOMElements.scLastNumber.classList.add('text-slate-600');
+                }
             }
             
             if (DOMElements.scDrawnCount) DOMElements.scDrawnCount.textContent = `${called.length}/75`;
             
-            if (called.length > 1) {
-                const recent = called.slice(0, -1).reverse().slice(0, 5); // Last 5 except the very last one
-                if (DOMElements.scRecents) DOMElements.scRecents.innerHTML = recent.map(num => `<span class="bg-slate-700 text-white px-2 py-1 rounded shadow-sm text-base border border-slate-600">${getLetterForNumber(num)} ${num}</span>`).join('');
-            } else {
-                if (DOMElements.scRecents) DOMElements.scRecents.innerHTML = '<span class="text-slate-500 text-sm">Nenhum</span>';
+            const scRecentNumbers = document.getElementById('sc-recent-numbers');
+            if (scRecentNumbers) {
+                if (called.length > 0) {
+                    const last3 = called.slice(-4, -1).reverse();
+                    if (last3.length > 0) {
+                        scRecentNumbers.innerHTML = '';
+                        last3.forEach((num, idx) => {
+                            const pill = document.createElement('div');
+                            pill.className = `w-12 h-12 rounded-full bg-slate-900 text-white border-2 flex items-center justify-center font-black text-lg shadow-sm relative overflow-hidden`;
+                            pill.style.borderColor = game.color || '#38bdf8';
+                            
+                            const glare = document.createElement('div');
+                            glare.className = 'absolute inset-0 rounded-full opacity-30 bg-gradient-to-br from-white/50 to-transparent mix-blend-overlay';
+                            pill.appendChild(glare);
+                            
+                            const numSpan = document.createElement('span');
+                            numSpan.className = 'z-10 relative';
+                            numSpan.textContent = num.toString();
+                            pill.appendChild(numSpan);
+                            
+                            scRecentNumbers.appendChild(pill);
+                        });
+                    } else {
+                        scRecentNumbers.innerHTML = '<span class="text-slate-500 font-bold text-sm">⏳ Aguardando Início do Sorteio...</span>';
+                    }
+                } else {
+                    scRecentNumbers.innerHTML = '<span class="text-slate-500 font-bold text-sm">⏳ Aguardando Início do Sorteio...</span>';
+                }
+            }
+
+            const scBoardRows = document.getElementById('sc-board-rows');
+            if (scBoardRows) {
+                const letters = appConfig.bingoTitle || ['B', 'I', 'N', 'G', 'O'];
+                const lettersRange = letters.join('') === 'AJUDE' ? [
+                    { letter: 'A', min: 1, max: 15 },
+                    { letter: 'J', min: 16, max: 30 },
+                    { letter: 'U', min: 31, max: 45 },
+                    { letter: 'D', min: 46, max: 60 },
+                    { letter: 'E', min: 61, max: 75 }
+                ] : [
+                    { letter: 'B', min: 1, max: 15 },
+                    { letter: 'I', min: 16, max: 30 },
+                    { letter: 'N', min: 31, max: 45 },
+                    { letter: 'G', min: 46, max: 60 },
+                    { letter: 'O', min: 61, max: 75 }
+                ];
+
+                if (called.length === 0) {
+                    scBoardRows.innerHTML = '<span class="text-slate-500 text-sm p-4 text-center w-full">Nenhum sorteio ainda</span>';
+                    scBoardRows.dataset.renderedLetters = '';
+                } else {
+                    const cacheKey = letters.join('') + (game.color || '#14b8a6');
+                    if (!scBoardRows.dataset.renderedLetters || scBoardRows.dataset.renderedLetters !== cacheKey) {
+                        scBoardRows.innerHTML = '';
+                        letters.forEach((letter, index) => {
+                            const rowWrapper = document.createElement('div');
+                            rowWrapper.className = 'flex flex-row items-stretch border border-slate-700 rounded-lg min-h-[56px] relative z-10 overflow-hidden bg-slate-900';
+                            
+                            const letterCol = document.createElement('div');
+                            letterCol.className = 'w-16 flex items-center justify-center font-black transition-colors duration-300 text-4xl border-r border-slate-700 bg-slate-800';
+                            letterCol.style.color = game.color || '#38bdf8';
+                            letterCol.textContent = letter;
+                            
+                            const numbersCol = document.createElement('div');
+                            numbersCol.className = 'flex-1 flex flex-wrap gap-2 items-center p-2 bg-slate-900 transition-colors duration-300';
+                            numbersCol.id = `sc-row-${index}`;
+                            
+                            rowWrapper.appendChild(letterCol);
+                            rowWrapper.appendChild(numbersCol);
+                            scBoardRows.appendChild(rowWrapper);
+                        });
+                        scBoardRows.dataset.renderedLetters = cacheKey;
+                    } else {
+                        document.querySelectorAll('[id^="sc-row-"]').forEach(row => {
+                            row.innerHTML = '';
+                        });
+                    }
+                    
+                    called.forEach((num) => {
+                        let targetIdx = 0;
+                        lettersRange.forEach((rng, idx) => {
+                            if (num >= rng.min && num <= rng.max) {
+                                targetIdx = idx;
+                            }
+                        });
+                        const row = document.getElementById(`sc-row-${targetIdx}`);
+                        if (row) {
+                            const numDiv = document.createElement('div');
+                            numDiv.className = `w-10 h-10 rounded-full flex items-center justify-center font-bold text-white shadow-sm transition-all duration-500 relative overflow-hidden border-2`;
+                            numDiv.style.borderColor = game.color || '#38bdf8';
+                            numDiv.style.backgroundColor = (game.color || '#38bdf8') + '20';
+                            
+                            const numSpan = document.createElement('span');
+                            numSpan.className = 'z-10 relative text-base';
+                            numSpan.textContent = num.toString();
+                            numDiv.appendChild(numSpan);
+                            row.appendChild(numDiv);
+                        }
+                    });
+                }
             }
         }
 
@@ -7691,9 +7809,9 @@ function showRoundEditModal(gameNumber: string) {
                             await updateSW(true);
                         } catch (e) {
                             console.error('Failed to update SW:', e);
+                            window.location.reload(); // fallback
                         }
                     }
-                    window.location.reload();
                 });
             },
             onOfflineReady() {
@@ -7709,14 +7827,7 @@ function showRoundEditModal(gameNumber: string) {
             }
         });
 
-        // Tentar verificar por atualizações quando o app ganha foco novamente (útil em mobile)
-        window.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible' && 'serviceWorker' in navigator) {
-                navigator.serviceWorker.ready.then(reg => {
-                    reg.update();
-                });
-            }
-        });
+
 
         // --- PWA Installation Logic ---
         let deferredPrompt: any;
