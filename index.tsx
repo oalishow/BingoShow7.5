@@ -1685,18 +1685,42 @@ function populateSettingsShortcutsTab() {
                                             <div class="flex-1 text-left text-sm font-bold text-slate-500 dark:text-slate-400">Total de Grades:</div>
                                             <input type="number" id="card-quantity" placeholder="Ex: 120 (rendem 20 folhas)" value="120" class="w-48 text-center text-lg font-bold p-3 border-2 border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
                                        </div>
-                                       <div class="flex items-center justify-between border-2 border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 p-3 rounded-lg">
-                                           <label class="text-slate-700 dark:text-slate-300 font-bold" for="card-color">Cor das Cartelas:</label>
-                                           <input type="color" id="card-color" value="#000000" class="w-12 h-10 p-0 border-0 rounded cursor-pointer">
-                                       </div>
-                                       <div class="flex items-center gap-2 border-2 border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 p-3 rounded-lg">
-                                           <input type="checkbox" id="card-reset-series" class="w-5 h-5 rounded cursor-pointer focus:ring-2 focus:ring-sky-500 accent-sky-600 border-gray-300">
-                                           <label class="text-slate-700 dark:text-slate-300 font-bold cursor-pointer" for="card-reset-series">Zerar numeração de série na geração</label>
-                                       </div>
-                                   </div>
-                                   <div class="flex justify-center gap-4 mb-4">
-                                        <button id="generate-and-print-cards-btn" class="bg-sky-600 hover:bg-sky-700 text-white font-bold py-3 px-8 rounded-full text-lg w-full">Gerar e Imprimir</button>
-                                   </div>
+                                                                               <div class="flex flex-col sm:flex-row gap-2">
+                                            <div class="flex-1 flex items-center justify-between border-2 border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 p-3 rounded-lg">
+                                                <label class="text-slate-700 dark:text-slate-300 font-bold" for="card-color">Cor das Cartelas:</label>
+                                                <input type="color" id="card-color" value="#000000" class="w-12 h-10 p-0 border-0 rounded cursor-pointer">
+                                            </div>
+                                            <div class="flex-1 flex items-center justify-between border-2 border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 p-3 rounded-lg">
+                                                <label class="text-slate-700 dark:text-slate-300 font-bold text-sm" for="card-layout">Layout (A4):</label>
+                                                <select id="card-layout" class="text-sm font-bold bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded p-1 outline-none">
+                                                    <option value="6">6 por folha</option>
+                                                    <option value="4">4 por folha</option>
+                                                    <option value="2">2 por folha</option>
+                                                    <option value="1">1 por folha</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="flex flex-col gap-2 mt-2">
+                                            <div class="flex items-center gap-2 border-2 border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 p-3 rounded-lg">
+                                                <input type="checkbox" id="card-include-qr" checked class="w-5 h-5 rounded cursor-pointer focus:ring-2 focus:ring-sky-500 accent-sky-600 border-gray-300">
+                                                <label class="text-slate-700 dark:text-slate-300 font-bold cursor-pointer" for="card-include-qr">Incluir QR Code (Jogar pelo Celular)</label>
+                                            </div>
+                                            <div class="flex items-center gap-2 border-2 border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 p-3 rounded-lg">
+                                                <input type="checkbox" id="card-include-logo" checked class="w-5 h-5 rounded cursor-pointer focus:ring-2 focus:ring-sky-500 accent-sky-600 border-gray-300">
+                                                <label class="text-slate-700 dark:text-slate-300 font-bold cursor-pointer" for="card-include-logo">Exibir Logo do Evento (se configurada)</label>
+                                            </div>
+                                            <div class="flex items-center gap-2 border-2 border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 p-3 rounded-lg">
+                                                <input type="checkbox" id="card-reset-series" class="w-5 h-5 rounded cursor-pointer focus:ring-2 focus:ring-sky-500 accent-sky-600 border-gray-300">
+                                                <label class="text-slate-700 dark:text-slate-300 font-bold cursor-pointer" for="card-reset-series">Zerar numeração de série na geração</label>
+                                            </div>
+                                        </div>
+                                        <div class="mt-2">
+                                            <input type="text" id="card-extra-instructions" placeholder="Instruções Extras / Regras (Ex: Proibido menores de 18 anos)" class="w-full text-sm font-bold p-3 border-2 border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+                                        </div>
+                                    </div>
+                                    <div class="flex justify-center gap-4 mb-4 mt-4">
+                                         <button id="generate-and-print-cards-btn" class="bg-sky-600 hover:bg-sky-700 text-white font-bold py-3 px-8 rounded-full text-lg w-full shadow-lg transition-transform active:scale-95">Gerar e Imprimir</button>
+                                    </div>
                                    <button id="close-card-generator-btn" class="mt-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 font-bold py-2 px-8 uppercase tracking-widest text-sm">Cancelar</button>
                                </div>`,
                 cardScanner: `<div class="modal-content bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-2xl max-w-md w-full text-center">
@@ -1742,8 +1766,10 @@ function generateProof(selectedGameKeys: string[], signerName: string = '') {
             <title>Relatório de Resultados - ${appConfig.bingoTitle}</title>
             <style>
                 body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 4rem; color: #333; line-height: 1.6; }
-                h1 { text-align: center; color: #1a365d; margin-bottom: 0.5rem; font-size: 2.5em; text-transform: uppercase; letter-spacing: 1px; }
-                .subtitle { text-align: center; color: #64748b; font-size: 1.1em; margin-bottom: 3rem; }
+                .header { text-align: center; margin-bottom: 2rem; }
+                .logo { max-width: 150px; max-height: 150px; margin-bottom: 1rem; object-fit: contain; }
+                h1 { color: #1a365d; margin-bottom: 0.2rem; font-size: 2.5em; text-transform: uppercase; letter-spacing: 1px; margin-top: 0; }
+                .subtitle { color: #64748b; font-size: 1.1em; margin-bottom: 3rem; }
                 h2 { color: #2563eb; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-top: 3rem; font-size: 1.8em; }
                 table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
                 th, td { border: 1px solid #e2e8f0; padding: 12px 16px; text-align: left; }
@@ -1762,8 +1788,11 @@ function generateProof(selectedGameKeys: string[], signerName: string = '') {
             </style>
         </head>
         <body>
-            <h1>${appConfig.bingoTitle}</h1>
-            <p class="subtitle">Relatório Oficial de Resultados<br>Gerado em: ${new Date().toLocaleString('pt-BR')}</p>
+            <div class="header">
+                ${appConfig.customLogoBase64 ? `<img src="${appConfig.customLogoBase64}" class="logo" alt="Logo do Evento">` : ''}
+                <h1>${appConfig.bingoTitle}</h1>
+                <p class="subtitle">Relatório Oficial de Resultados<br>Gerado em: ${new Date().toLocaleString('pt-BR')}<br>Sistema: ${appConfig.appName || 'Bingo Show'}</p>
+            </div>
     `;
 
     selectedGameKeys.forEach(key => {
@@ -5933,6 +5962,10 @@ function showRoundEditModal(gameNumber: string) {
             const priceInput = document.getElementById('card-batch-price') as HTMLInputElement;
             const quantityInput = document.getElementById('card-quantity') as HTMLInputElement;
             const colorInput = document.getElementById('card-color') as HTMLInputElement;
+            const layoutInput = document.getElementById('card-layout') as HTMLSelectElement;
+            const includeQrInput = document.getElementById('card-include-qr') as HTMLInputElement;
+            const includeLogoInput = document.getElementById('card-include-logo') as HTMLInputElement;
+            const extraInstructionsInput = document.getElementById('card-extra-instructions') as HTMLInputElement;
             
             if (!quantityInput) return;
 
@@ -5944,6 +5977,10 @@ function showRoundEditModal(gameNumber: string) {
             const cardColor = colorInput ? colorInput.value : '#0ea5e9';
             const isLight = isLightColor(cardColor);
             const headerTextColor = isLight ? '#000000' : '#ffffff';
+            const cardsPerPage = layoutInput ? parseInt(layoutInput.value, 10) : 6;
+            const includeQr = includeQrInput ? includeQrInput.checked : true;
+            const cardUseLogo = includeLogoInput ? includeLogoInput.checked : true;
+            const extraInstructions = (extraInstructionsInput && extraInstructionsInput.value.trim()) || '';
 
             if (isNaN(quantity) || quantity <= 0 || quantity > 5000) {
                 showAlert("Por favor, insira uma quantidade válida entre 1 e 5000.");
@@ -6073,13 +6110,13 @@ function showRoundEditModal(gameNumber: string) {
             }
 
             const logoData = appStore.state.appConfig.customLogoBase64 || '';
-            const useLogo = !!logoData;
+            const useLogo = cardUseLogo && !!logoData;
 
-            // Split into pages of 6
-            for (let i = 0; i < uuids.length; i += 6) {
-                const batch = uuids.slice(i, i + 6);
+            // Split into pages
+            for (let i = 0; i < uuids.length; i += cardsPerPage) {
+                const batch = uuids.slice(i, i + cardsPerPage);
                 const firstSeriesOfFolha = appStore.state.cardsData[batch[0]].series;
-                const folhaNumber = Math.floor((firstSeriesOfFolha - 1) / 6) + 1;
+                const folhaNumber = Math.floor((firstSeriesOfFolha - 1) / cardsPerPage) + 1;
 
                 const batchPromises = batch.map(async (uuid, idx) => {
                     const cardData = appStore.state.cardsData[uuid];
@@ -6155,6 +6192,7 @@ function showRoundEditModal(gameNumber: string) {
                                 </div>
                         
                                 <!-- Info Column (Right side) -->
+                                ${includeQr ? `
                                 <div class="w-[28%] flex flex-col items-center bg-white p-[2px] justify-between flex-shrink-0 min-h-0">
                                     <div class="text-[7px] font-bold leading-tight uppercase mb-[1px] text-center px-1">Acompanhe ao<br>vivo</div>
                                     <img src="${qrDataUrl}" alt="QR" class="w-20 h-20 border-[2px] border-black object-contain bg-white" />
@@ -6166,6 +6204,19 @@ function showRoundEditModal(gameNumber: string) {
                                         ${gridSideText}
                                     </div>
                                 </div>
+                                ` : `
+                                <div class="w-[28%] flex flex-col items-center bg-white p-1 flex-shrink-0 min-h-0 bg-gray-50">
+                                    <div class="text-[4px] text-gray-500 uppercase tracking-widest break-all font-mono mb-[2px] mt-1 text-center">ID: ${uuid.substring(0,8)}</div>
+                                    <div class="flex-grow flex items-center justify-center opacity-10">
+                                        <!-- Placeholder if no QR -->
+                                        <div class="text-4xl font-black rotate-[-45deg] whitespace-nowrap">BINGO</div>
+                                    </div>
+                                    <div class="w-full flex flex-col gap-[1px] mt-auto">
+                                        <div class="text-[5px] font-black uppercase text-center w-full leading-tight bg-gray-200 border border-black py-[1px]">Premiações</div>
+                                        ${gridSideText}
+                                    </div>
+                                </div>
+                                `}
                             </div>
                         </div>
                     `;
@@ -6191,10 +6242,12 @@ function showRoundEditModal(gameNumber: string) {
                         </div>
                     
                         <!-- MAIN GRIDS -->
-                        <div class="flex-grow grid grid-cols-2 grid-rows-3 gap-1 pb-1 relative min-h-0">
+                        <div class="flex-grow grid gap-1 pb-1 relative min-h-0 ${cardsPerPage === 1 ? 'grid-cols-1 grid-rows-1' : cardsPerPage === 2 ? 'grid-cols-1 grid-rows-2' : cardsPerPage === 4 ? 'grid-cols-2 grid-rows-2' : 'grid-cols-2 grid-rows-3'}">
                              ${resolvedBatchHTML.join('')}
                         </div>
                         
+                        ${extraInstructions ? `<div class="border-[2px] border-black border-b-0 text-center font-bold text-[8px] bg-yellow-100 py-0.5">${extraInstructions}</div>` : ''}
+
                         <!-- MASTER BOTTOM STUB -->
                         <div class="border-[2px] border-black mt-auto flex flex-col uppercase text-[9px] font-bold leading-none flex-shrink-0 bg-white">
                             <div class="flex border-b-[2px] border-black divide-x-[2px] divide-black bg-gray-100">
@@ -6483,6 +6536,13 @@ function showRoundEditModal(gameNumber: string) {
                 DOMElements.resetConfirmModal.innerHTML = getModalTemplates().resetConfirm;
                 DOMElements.resetConfirmModal.classList.remove('hidden');
                 document.getElementById('confirm-reset-btn')!.onclick = async () => {
+                    if (appStore.state.eventId) {
+                        try {
+                            await setDoc(doc(db, "events", appStore.state.eventId), { isReset: true }, { merge: true });
+                        } catch (e) {
+                            console.error("Erro ao notificar painéis públicos:", e);
+                        }
+                    }
                     safeLocalStorage.removeItem(LOCAL_STORAGE_KEY);
                     await clearAllSponsorImages();
                     await clearCardsDB();

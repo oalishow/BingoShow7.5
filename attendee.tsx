@@ -21,11 +21,55 @@ const db = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId);
 clearIndexedDbPersistence(db).catch(() => {});
 
 document.addEventListener('DOMContentLoaded', async () => {
+    const offlineOverlay = document.getElementById('attendee-offline-overlay')!;
+    const onlineModal = document.getElementById('attendee-online-modal')!;
+    
+    const errorOverlay = document.getElementById('attendee-error-overlay')!;
+    const errorMessage = document.getElementById('attendee-error-message')!;
+
+    const showFatalError = (msg: string) => {
+        if (contentContainer) contentContainer.classList.add('hidden');
+        if (waitingScreen) waitingScreen.classList.add('hidden');
+        if (errorOverlay) {
+            errorMessage.textContent = msg;
+            errorOverlay.classList.remove('hidden');
+            errorOverlay.classList.add('flex');
+        }
+    };
+
+    window.addEventListener('offline', () => {
+        if (offlineOverlay) {
+            offlineOverlay.classList.remove('hidden');
+            offlineOverlay.classList.add('flex');
+        }
+    });
+
+    window.addEventListener('online', () => {
+        if (offlineOverlay) {
+            offlineOverlay.classList.add('hidden');
+            offlineOverlay.classList.remove('flex');
+        }
+        if (onlineModal) {
+            onlineModal.classList.remove('hidden');
+            onlineModal.classList.add('flex');
+            setTimeout(() => {
+                onlineModal.classList.add('hidden');
+                onlineModal.classList.remove('flex');
+            }, 3000);
+        }
+    });
     const urlParams = new URLSearchParams(window.location.search);
     const targetEventId = urlParams.get('event');
     
     const statusBanner = document.getElementById('attendee-status-banner')!;
     const contentContainer = document.getElementById('attendee-content')!;
+    
+    // Waiting Screen Elements
+    const waitingScreen = document.getElementById('attendee-waiting-screen')!;
+    const waitingLogo = document.getElementById('waiting-logo') as HTMLImageElement;
+    const waitingAppName = document.getElementById('waiting-app-name')!;
+    const waitingTitle = document.getElementById('waiting-title')!;
+    const waitingMessage = document.getElementById('waiting-message')!;
     
     const appNameEl = document.getElementById('attendee-app-name')!;
     const gameNameEl = document.getElementById('attendee-game-name')!;
@@ -55,16 +99,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
     if (!targetEventId) {
-        statusBanner.className = "w-full p-4 text-center text-sm font-bold bg-red-900 text-red-200 rounded-xl shadow border border-red-700";
-        statusBanner.innerHTML = `⚠️ URL inválida. ID do evento ausente.`;
+        showFatalError('URL inválida. ID do evento ausente.');
         return;
     }
 
     try {
         await signInAnonymously(auth);
     } catch (e: any) {
-        statusBanner.className = "w-full p-4 text-center text-sm font-bold bg-red-900 text-red-200 rounded-xl shadow border border-red-700";
-        statusBanner.innerHTML = `⚠️ Erro de conexão com o painel: ${e.message}`;
+        showFatalError(`Erro de conexão com o painel: ${e.message}`);
         return;
     }
 
@@ -143,17 +185,43 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (docSnap.exists()) {
             const eventData = docSnap.data();
             
+            if (eventData.isReset) {
+                showFatalError('O evento foi encerrado ou resetado pelo organizador. Feche esta página e escaneie o novo QR Code caso um novo evento tenha sido iniciado.');
+                if (waitingScreen) waitingScreen.classList.add('hidden');
+                if (contentContainer) contentContainer.classList.add('hidden');
+                return;
+            }
+            
             if (!eventData.activeGameNumber) {
-                statusBanner.className = "w-full p-4 text-center text-sm font-bold bg-yellow-900/50 text-yellow-200 rounded-xl shadow-sm border border-yellow-700/50 animate-pulse";
-                statusBanner.innerHTML = `⏳ Aguardando próxima rodada...`;
+                // Populate waiting screen
+                if (eventData.fullStateJSON) {
+                    try {
+                        const state = JSON.parse(eventData.fullStateJSON);
+                        const config = state.appConfig;
+                        waitingAppName.textContent = config.bingoTitle || 'Bingo Show';
+                        if (config.customLogoBase64) {
+                            waitingLogo.src = config.customLogoBase64;
+                            waitingLogo.classList.remove('hidden');
+                        } else {
+                            waitingLogo.classList.add('hidden');
+                        }
+                    } catch(e) {}
+                }
+                
                 contentContainer.classList.add('hidden');
-                statusBanner.classList.remove('hidden');
+                contentContainer.classList.remove('flex');
+                waitingScreen.classList.remove('hidden');
+                waitingScreen.classList.add('flex');
+                statusBanner.classList.add('hidden');
+                
                 lastNumbersStr = '';
                 lastAuctionStr = '';
                 lastRoundStatusStr = '';
                 return;
             }
             
+            waitingScreen.classList.add('hidden');
+            waitingScreen.classList.remove('flex');
             statusBanner.classList.add('hidden');
             contentContainer.classList.remove('hidden');
             contentContainer.classList.add('flex');
@@ -586,10 +654,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                                     recentNumbersEl.appendChild(pill);
                                 });
                             } else {
-                                recentNumbersEl.innerHTML = '<span class="text-slate-400 font-bold text-xs sm:text-sm">Nenhum número anterior</span>';
+                                recentNumbersEl.innerHTML = '<span class="text-slate-400 font-bold text-xs sm:text-sm animate-pulse">⏳ Aguardando Início do Sorteio...</span>';
                             }
                         } else {
-                            recentNumbersEl.innerHTML = '<span class="text-slate-400 font-bold text-xs sm:text-sm">Nenhum número anterior</span>';
+                            recentNumbersEl.innerHTML = '<span class="text-slate-400 font-bold text-xs sm:text-sm animate-pulse">⏳ Aguardando Início do Sorteio...</span>';
                         }
                            
                         const lettersRange = newLetters.join('') === 'AJUDE' ? [
@@ -661,10 +729,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
         } else {
-            statusBanner.classList.remove('hidden');
-            contentContainer.classList.add('hidden');
-            statusBanner.className = "w-full p-4 text-center text-sm font-bold bg-red-900 text-red-200 rounded-xl shadow border border-red-700";
-            statusBanner.innerHTML = `⚠️ Evento não encontrado. O organizador pode ter fechado a sala.`;
+            showFatalError('Evento não encontrado. O organizador pode ter fechado a sala.');
         }
     });
 });
