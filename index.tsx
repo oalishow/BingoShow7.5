@@ -98,6 +98,8 @@ let eventId = '';
                     eventId: '',
                     eventPassword: '',
                     pixKey: '1e8e4af0-4d23-440c-9f3d-b4e527f65911',
+                    pixTitle: 'Apoie nossa Instituição com PIX',
+                    pixQrCodeUrl: '',
                     paypalLink: 'https://www.paypal.com/donate/?hosted_button_id=WJBLF3LV3RZRW',
                     tutorialVideoLink: 'https://youtu.be/8iOOW-CR-WQ?si=Jolrp2qR38xhY5EZ', 
                     bingoTitle: 'BINGO',
@@ -174,7 +176,7 @@ let eventId = '';
                     prizeDrawNamePlaceholder: "Nome (Opcional)",
                     prizeDrawDescriptionPlaceholder: "Brinde (Opcional)",
                     registerPrizeButton: "📝 Registrar Brinde",
-                    supportTitle: "Apoie o Seminarista 🤝",
+                    supportTitle: "Apoie a Instituição 🤝",
                     supportButton: "🤝 Faça sua Doação",
                     roundsAndPrizesTitle: "Rodadas e Prêmios",
                     addExtraRoundButton: "➕ Adicionar Rodada Extra",
@@ -222,14 +224,14 @@ let eventId = '';
                     resetConfirmModalConfirmButton: "✅ Sim, Reiniciar",
                     drawnPrizesModalTitle: "Cartelas de Brinde Já Sorteadas",
                     modalCloseButton: "Fechar",
-                    donationModalTitle: "Apoio ao Projeto Seminarista",
+                    donationModalTitle: "Apoio à Instituição",
                     donationModalDescription: "Sua doação ajuda a manter este projeto ativo. Agradecemos imensamente!",
                     donationModalPaypalLabel: "Doação via PayPal",
                     donationModalPixLabel: "PIX (Chave Aleatória)",
                     donationModalCopyButton: "📋 Copiar Chave PIX",
                     finalWinnersModalTitle: "Vencedores do Evento",
                     finalWinnersModalProofButton: "🧾 Gerar Prova Final",
-                    finalWinnersModalSupportButton: "🤝 Apoie o Seminarista (PIX/PayPal)",
+                    finalWinnersModalSupportButton: "🤝 Apoie a Instituição (PIX/PayPal)",
                     changelogModalTitle: "📜 Histórico de Versões",
                     changelogModalCurrentVersionLabel: "Versão Atual:",
                     settingsModalTitle: "Configurações de Personalização",
@@ -737,6 +739,7 @@ let eventId = '';
             cardGeneratorModal: document.getElementById('card-generator-modal'),
             cardScannerModal: document.getElementById('card-scanner-modal'),
             sponsorImageEditorModal: document.getElementById('sponsor-image-editor-modal'),
+            intervalQrModal: document.getElementById('interval-qr-modal'),
         };
 
 function renderCustomLogo() {
@@ -1090,9 +1093,80 @@ function populateSettingsShortcutsTab() {
                                 </main>
                                 <footer class="flex-shrink-0 flex justify-between items-center w-full relative z-10">
                                     <div id="break-clock" class="text-4xl font-bold text-slate-700 dark:text-slate-300"></div>
-                                    <button id="close-break-modal-btn" class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-3 px-8 rounded-full text-lg">${appLabels.modalBackButton}</button>
+                                    <div class="flex items-center gap-3">
+                                        <button id="open-interval-qr-btn" class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-6 rounded-full text-lg flex items-center gap-2 shadow-lg transition-all hover:scale-105 cursor-pointer">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                                            </svg>
+                                            <span>📱 QR Code (Ao Vivo / PIX)</span>
+                                        </button>
+                                        <button id="close-break-modal-btn" class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-3 px-8 rounded-full text-lg cursor-pointer">${appLabels.modalBackButton}</button>
+                                    </div>
                                 </footer>
                              </div>`,
+                intervalQr: `<div class="modal-content bg-white dark:bg-gray-800 p-6 sm:p-8 rounded-2xl shadow-2xl max-w-4xl w-full text-center relative border border-slate-200 dark:border-gray-700 max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between border-b border-slate-200 dark:border-gray-700 pb-4 mb-6">
+        <div class="text-left">
+            <h2 class="text-2xl sm:text-3xl font-black text-amber-500 dark:text-amber-400">📱 Interatividade no Intervalo</h2>
+            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Acompanhe pelo celular ou ajude a instituição com doações</p>
+        </div>
+        <button id="close-interval-qr-x-btn" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-3xl font-bold cursor-pointer px-2 leading-none">&times;</button>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
+        <!-- CARD 1: ACOMPANHAR AO VIVO -->
+        <div class="bg-indigo-50 dark:bg-gray-900/60 p-5 rounded-2xl border border-indigo-200 dark:border-indigo-900/50 flex flex-col items-center text-center shadow-sm">
+            <span class="inline-block bg-indigo-600 text-white font-bold text-xs px-3 py-1 rounded-full mb-3">AO VIVO NO CELULAR</span>
+            <h3 class="text-xl font-bold text-slate-800 dark:text-white mb-2">Acompanhar o Evento</h3>
+            <p class="text-xs text-slate-600 dark:text-slate-300 mb-4">Aponte a câmera do celular para ver o painel e sorteios em tempo real:</p>
+            
+            <div id="interval-live-qr-box" class="bg-white p-3 rounded-xl shadow-md border border-slate-200 dark:border-gray-700 mb-3 flex items-center justify-center min-h-[190px] w-[200px]">
+                <img id="interval-live-qr-img" src="" alt="QR Code Ao Vivo" class="w-44 h-44 object-contain hidden" />
+                <div id="interval-live-qr-loading" class="text-xs text-indigo-600 dark:text-indigo-400 font-semibold flex flex-col items-center gap-2">
+                    <span class="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></span>
+                    Gerando QR Code...
+                </div>
+            </div>
+
+            <p id="interval-live-url-text" class="text-[11px] font-mono text-indigo-600 dark:text-indigo-400 truncate max-w-full px-2 mb-3 bg-white dark:bg-gray-800 py-1.5 rounded w-full border border-indigo-200 dark:border-indigo-900 select-all cursor-text">
+                ...
+            </p>
+
+            <button id="interval-copy-live-url-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow">
+                📋 Copiar Link Ao Vivo
+            </button>
+        </div>
+
+        <!-- CARD 2: DOAÇÃO PIX -->
+        <div class="bg-emerald-50 dark:bg-gray-900/60 p-5 rounded-2xl border border-emerald-200 dark:border-emerald-900/50 flex flex-col items-center text-center shadow-sm">
+            <span class="inline-block bg-emerald-600 text-white font-bold text-xs px-3 py-1 rounded-full mb-3">DOAÇÃO INSTITUIÇÃO</span>
+            <h3 id="interval-pix-title-display" class="text-xl font-bold text-slate-800 dark:text-white mb-2">Doação via PIX</h3>
+            <p class="text-xs text-slate-600 dark:text-slate-300 mb-4">Ajude nossa instituição escaneando o QR Code abaixo com seu aplicativo do banco:</p>
+            
+            <div id="interval-pix-qr-box" class="bg-white p-3 rounded-xl shadow-md border border-slate-200 dark:border-gray-700 mb-3 flex items-center justify-center min-h-[190px] w-[200px]">
+                <img id="interval-pix-qr-img" src="" alt="QR Code PIX" class="w-44 h-44 object-contain hidden" />
+                <div id="interval-pix-qr-placeholder" class="text-xs text-slate-500 dark:text-slate-400 text-center p-2 hidden">
+                    Nenhum QR Code do PIX cadastrado nas configurações.
+                </div>
+            </div>
+
+            <div class="w-full space-y-2">
+                <div id="interval-pix-key-box" class="text-xs font-mono bg-white dark:bg-gray-800 text-slate-800 dark:text-emerald-300 p-2 rounded-lg border border-slate-200 dark:border-gray-700 truncate select-all cursor-text text-center">
+                </div>
+
+                <button id="interval-copy-pix-key-btn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow">
+                    📋 Copiar Chave PIX
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-6 text-center">
+        <button id="close-interval-qr-footer-btn" class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-2.5 px-8 rounded-full text-sm cursor-pointer shadow transition-all">
+            Voltar ao Intervalo
+        </button>
+    </div>
+</div>`,
                 menuEdit: `<div class="modal-content bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-lg w-full"><h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">${appLabels.menuEditModalTitle}</h2><p class="text-slate-600 dark:text-slate-400 mb-4">${appLabels.menuEditModalDescription}</p><textarea id="menu-textarea" class="w-full h-48 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white p-3 border border-slate-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all"></textarea><div class="flex justify-end gap-4 mt-4"><button id="cancel-menu-edit-btn" class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-2 px-6 rounded-full">${appLabels.modalCancelButton}</button><button id="save-menu-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-6 rounded-full">${appLabels.modalSaveButton}</button></div></div>`,
                 winnerEdit: `<div class="modal-content bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-lg w-full"><h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">${appLabels.winnerEditModalTitle}</h2><div class="space-y-4"><input type="text" id="edit-winner-name" placeholder="${appLabels.winnerEditModalNamePlaceholder}" class="w-full text-center text-xl font-bold p-3 border-2 border-slate-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"><input type="text" id="edit-winner-prize" placeholder="${appLabels.winnerEditModalPrizePlaceholder}" class="w-full text-center text-xl font-bold p-3 border-2 border-slate-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"></div><div class="flex justify-between items-center mt-8 gap-4"><button id="remove-winner-btn" class="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-6 rounded-full">${appLabels.winnerEditModalRemoveButton}</button><div><button id="cancel-winner-edit-btn" class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-2 px-6 rounded-full">${appLabels.modalCancelButton}</button><button id="save-winner-changes-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-6 rounded-full ml-2">${appLabels.modalSaveButton}</button></div></div></div>`,
                 deleteConfirm: `<div class="modal-content bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center"><h2 class="text-2xl font-bold text-yellow-400 mb-4">${appLabels.deleteConfirmModalTitle}</h2><p id="delete-confirm-message" class="text-slate-700 dark:text-slate-300 text-lg mb-8"></p><div class="flex justify-center gap-4"><button id="cancel-delete-btn" class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-2 px-6 rounded-full text-lg">${appLabels.modalCancelButton}</button><button id="confirm-delete-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-full text-lg">${appLabels.deleteConfirmModalDeleteButton}</button></div></div>`,
@@ -1128,22 +1202,40 @@ function populateSettingsShortcutsTab() {
                                 <button id="close-drawn-prizes-btn" class="mt-6 bg-slate-600 hover:bg-slate-700 text-white font-bold py-3 px-8 rounded-full text-lg flex-shrink-0">${appLabels.modalCloseButton}</button>
                              </div>`,
                 donation: `<div class="modal-content bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center"><h2 class="text-3xl font-black text-amber-400 mb-6">${appLabels.donationModalTitle}</h2><p class="text-slate-700 dark:text-slate-300 mb-4">${appLabels.donationModalDescription}</p><div class="space-y-6 text-left"><div class="text-center border-b border-gray-700 pb-6"><p class="text-lg font-bold text-gray-900 dark:text-white mb-4">${appLabels.donationModalPaypalLabel}</p><div class="flex justify-center"><form action="https://www.paypal.com/donate" method="post" target="_blank"><input type="hidden" name="hosted_button_id" value="FLVDNY994MNQS" /><input type="image" src="https://www.paypalobjects.com/pt_BR/BR/i/btn/btn_donateCC_LG.gif" border="0" name="submit" title="PayPal - The safer, easier way to pay online!" alt="Faça doações com o botão do PayPal" /></form></div></div><div class="pt-6"><p class="text-lg font-bold text-gray-900 dark:text-white mb-2">${appLabels.donationModalPixLabel}</p><div class="flex flex-col items-center"><div id="pix-key-display" contenteditable="false" class="bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white p-3 rounded-lg text-center text-sm font-mono select-all cursor-text max-w-full overflow-hidden whitespace-nowrap overflow-ellipsis"></div><button id="copy-pix-btn" class="mt-3 w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition-all">${appLabels.donationModalCopyButton}</button></div></div></div><button id="close-donation-btn" class="mt-8 bg-slate-600 hover:bg-slate-700 text-white font-bold py-2 px-6 rounded-full text-lg">${appLabels.modalCloseButton}</button></div>`,
-                finalWinners: `<div class="modal-content bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-5xl w-full text-center h-[95vh] flex flex-col justify-between">
-                                <h2 id="end-title" class="text-5xl font-black text-yellow-400 mb-4 flex-shrink-0 [-webkit-text-stroke:2px_#b45309] drop-shadow-md">${appLabels.finalWinnersModalTitle}</h2>
-                                <div id="end-winner-display" class="flex-grow flex items-center justify-center p-4 min-h-[150px]">
-                                    <div id="current-winner-card" class="bg-gray-200 dark:bg-gray-700 p-8 rounded-xl shadow-2xl w-full max-w-2xl text-center transform scale-90 opacity-0 transition-all duration-500"></div>
+                finalWinners: `<div class="modal-content bg-white dark:bg-gray-800 p-6 sm:p-8 rounded-2xl shadow-2xl max-w-5xl w-full text-center h-[95vh] flex flex-col justify-between overflow-y-auto">
+                                <h2 id="end-title" class="text-4xl sm:text-5xl font-black text-yellow-400 mb-3 flex-shrink-0 [-webkit-text-stroke:2px_#b45309] drop-shadow-md">${appLabels.finalWinnersModalTitle}</h2>
+                                <div id="end-winner-display" class="flex-grow flex items-center justify-center p-2 min-h-[140px]">
+                                    <div id="current-winner-card" class="bg-gray-200 dark:bg-gray-700 p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-2xl text-center transform scale-90 opacity-0 transition-all duration-500"></div>
                                 </div>
-                                <!-- Seção de Patrocinadores -->
-                                <div id="final-sponsors-section" class="flex-shrink-0 my-4">
-                                    <h3 class="text-2xl font-bold text-slate-700 dark:text-slate-300 mb-3">Agradecimento aos Patrocinadores</h3>
-                                    <div id="final-sponsors-list" class="bg-gray-100 dark:bg-gray-900/50 p-6 rounded-xl h-72 md:h-80 w-full flex flex-col items-center justify-center transition-all duration-500 overflow-hidden shadow-inner border border-gray-700/50"></div>
-                                </div>
-                                <div class="mt-4 flex flex-col items-center gap-2 flex-shrink-0">
-                                    <div class="flex justify-center gap-4 w-full max-w-md">
-                                        <button id="generate-proof-final-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-8 rounded-full text-lg">${appLabels.finalWinnersModalProofButton}</button>
-                                        <button id="close-final-modal-btn" class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-2 px-8 rounded-full text-lg">${appLabels.modalCloseButton}</button>
+                                <!-- Seção de Patrocinadores e QR Code PIX da Instituição -->
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 flex-shrink-0 my-3 min-h-0 text-left">
+                                    <div id="final-sponsors-section" class="flex flex-col items-center bg-gray-100 dark:bg-gray-900/50 p-4 rounded-xl border border-slate-200 dark:border-gray-700/50 shadow-inner">
+                                        <h3 class="text-lg font-bold text-slate-700 dark:text-slate-300 mb-2">Agradecimento aos Patrocinadores</h3>
+                                        <div id="final-sponsors-list" class="h-44 md:h-52 w-full flex flex-col items-center justify-center transition-all duration-500 overflow-hidden"></div>
                                     </div>
-                                    <button id="donation-final-btn" class="mt-2 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg text-sm transition-all shadow-lg w-full max-w-xs">${appLabels.finalWinnersModalSupportButton}</button>
+                                    <div id="final-pix-section" class="flex flex-col items-center justify-center bg-emerald-50 dark:bg-gray-900/60 p-4 rounded-xl border border-emerald-200 dark:border-emerald-900/50 text-center shadow-sm">
+                                        <span class="inline-block bg-emerald-600 text-white font-bold text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full mb-1">Apoio com PIX</span>
+                                        <h3 id="final-pix-title" class="text-lg font-bold text-slate-800 dark:text-white mb-1">Apoie a Instituição</h3>
+                                        <p class="text-xs text-slate-600 dark:text-slate-300 mb-2">Escaneie o QR Code no seu aplicativo do banco para contribuir:</p>
+                                        <div class="bg-white p-2 rounded-xl shadow border border-slate-200 dark:border-gray-700 mb-2 flex items-center justify-center min-h-[130px] w-[140px]">
+                                            <img id="final-pix-qr-img" src="" alt="QR Code PIX Instituição" class="w-28 h-28 object-contain hidden" />
+                                            <div id="final-pix-qr-placeholder" class="text-xs text-slate-500 dark:text-slate-400 p-2 hidden">
+                                                Carregando QR Code...
+                                            </div>
+                                        </div>
+                                        <div id="final-pix-key-box" class="text-xs font-mono bg-white dark:bg-gray-800 text-slate-800 dark:text-emerald-300 px-3 py-1 rounded-lg border border-slate-200 dark:border-gray-700 truncate max-w-full select-all cursor-text mb-2 hidden">
+                                        </div>
+                                        <button id="final-copy-pix-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 px-4 rounded-lg text-xs transition-all shadow hidden cursor-pointer flex items-center justify-center gap-1">
+                                            📋 Copiar Chave PIX
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="mt-2 flex flex-col items-center gap-2 flex-shrink-0">
+                                    <div class="flex justify-center gap-4 w-full max-w-md">
+                                        <button id="generate-proof-final-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-8 rounded-full text-base cursor-pointer shadow">${appLabels.finalWinnersModalProofButton}</button>
+                                        <button id="close-final-modal-btn" class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-2 px-8 rounded-full text-base cursor-pointer shadow">${appLabels.modalCloseButton}</button>
+                                    </div>
+                                    <button id="donation-final-btn" class="mt-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-4 rounded-lg text-xs transition-all shadow w-full max-w-xs cursor-pointer">${appLabels.finalWinnersModalSupportButton}</button>
                                 </div>
                                </div>`,
                 changelog: `<div class="modal-content bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-2xl w-full flex flex-col h-[90vh]">
@@ -1281,6 +1373,32 @@ function populateSettingsShortcutsTab() {
                             <div>
                                 <label for="drawn-stroke-width-slider" class="block text-sm font-bold text-slate-600 dark:text-slate-400 mb-1">${appLabels.settingsDrawnStrokeWidthLabel} (<span id="drawn-stroke-width-value">2</span>px)</label>
                                 <input type="range" id="drawn-stroke-width-slider" min="0" max="10" value="2" class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer range-lg">
+                            </div>
+
+                            <div class="border-t border-slate-200 dark:border-gray-700 pt-6 mt-6">
+                                <h3 class="text-xl font-bold text-slate-700 dark:text-slate-300 mb-2">💚 Doações e QR Code PIX (Intervalo & Telão)</h3>
+                                <p class="text-xs text-slate-600 dark:text-slate-400 mb-4">Personalize a chave e a imagem do QR Code PIX da instituição exibidos durante o intervalo.</p>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Título / Nome da Instituição</label>
+                                        <input type="text" id="pix-title-input" class="w-full bg-white dark:bg-gray-800 text-slate-800 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-500 text-sm" placeholder="Ex: Doação para a Paróquia / Instituição">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Chave PIX (Texto / Chave Aleatória / CPF / CNPJ / E-mail)</label>
+                                        <input type="text" id="pix-key-input" class="w-full bg-white dark:bg-gray-800 text-slate-800 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-500 text-sm font-mono" placeholder="Ex: 1e8e4af0-4d23-440c-9f3d-b4e527f65911">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Imagem do QR Code PIX (Upload)</label>
+                                        <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">Faça upload da imagem do seu banco (se não enviar imagem, o QR Code será gerado automaticamente a partir da chave):</p>
+                                        <div class="flex items-center gap-4">
+                                            <img id="pix-qr-preview" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Pré-visualização QR Code PIX" class="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-lg object-contain border border-gray-300 dark:border-gray-600">
+                                            <div class="flex-grow">
+                                                <input type="file" id="pix-qr-upload" accept="image/png, image/jpeg, image/webp" class="block w-full text-xs text-slate-600 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100">
+                                                <button id="remove-pix-qr-btn" class="mt-2 bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-3 rounded-lg text-xs cursor-pointer">Remover Imagem do QR Code</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -1871,11 +1989,26 @@ function showDrawnPrizesModal() {
     });
 }
 
-function showFinalWinnersModal(isEndOfEvent: boolean = true) {
+async function showFinalWinnersModal(isEndOfEvent: boolean = true) {
     if (finalConfettiInterval) clearInterval(finalConfettiInterval);
-        if (typeof finalSponsorsInterval !== "undefined" && finalSponsorsInterval) clearInterval(finalSponsorsInterval);
-    DOMElements.finalWinnersModal.innerHTML = getModalTemplates().finalWinners;
-    DOMElements.finalWinnersModal.classList.remove('hidden');
+    if (typeof finalSponsorsInterval !== "undefined" && finalSponsorsInterval) clearInterval(finalSponsorsInterval);
+
+    let finalModal = DOMElements.finalWinnersModal || document.getElementById('final-winners-modal');
+    if (!finalModal) {
+        finalModal = document.createElement('div');
+        finalModal.id = 'final-winners-modal';
+        finalModal.className = 'fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-[110] hidden';
+    }
+    
+    // Anexa ao elemento em tela cheia se existir, senão ao body
+    const targetContainer = document.fullscreenElement || document.body;
+    if (finalModal.parentElement !== targetContainer) {
+        targetContainer.appendChild(finalModal);
+    }
+
+    DOMElements.finalWinnersModal = finalModal;
+    finalModal.innerHTML = getModalTemplates().finalWinners;
+    finalModal.classList.remove('hidden');
 
     const endTitle = document.getElementById('end-title');
     if (endTitle && !isEndOfEvent) {
@@ -1901,11 +2034,13 @@ function showFinalWinnersModal(isEndOfEvent: boolean = true) {
         .filter(s => (s.name && s.name.trim() !== "") || s.image)
         .concat((appStore.state.appConfig.globalSponsor.name || appStore.state.appConfig.globalSponsor.image) ? [appStore.state.appConfig.globalSponsor] : []);
     
-    // We display all sponsors, including duplicates if they are entered multiple times
     const sponsorsToDisplay = allSponsors;
-    
+    const sponsorsSection = document.getElementById('final-sponsors-section');
+    const pixSection = document.getElementById('final-pix-section');
+
     if (sponsorsToDisplay.length > 0) {
-        document.getElementById('final-sponsors-section')!.classList.remove('hidden');
+        if (sponsorsSection) sponsorsSection.classList.remove('hidden');
+        if (pixSection) pixSection.classList.remove('md:col-span-2');
         let sponsorIndex = 0;
         
         const applyTransition = (el: HTMLElement, state: 'out' | 'in') => {
@@ -1924,15 +2059,16 @@ function showFinalWinnersModal(isEndOfEvent: boolean = true) {
         };
 
         const cycleFinalSponsors = () => {
+            if (!sponsorsList) return;
             applyTransition(sponsorsList, 'out');
             setTimeout(() => {
                 const s = sponsorsToDisplay[sponsorIndex % sponsorsToDisplay.length];
                 let content = '';
                 if (s.image) {
-                    content += `<div class="w-full flex-1 min-h-0 flex items-center justify-center mb-4"><img src="${s.image}" alt="${s.name || 'Patrocinador'}" class="max-w-full max-h-full object-contain drop-shadow-2xl"></div>`;
+                    content += `<div class="w-full flex-1 min-h-0 flex items-center justify-center mb-2"><img src="${s.image}" alt="${s.name || 'Patrocinador'}" class="max-w-full max-h-full object-contain drop-shadow-xl"></div>`;
                 }
                 if (s.name) {
-                    content += `<span class="text-4xl md:text-5xl font-bold text-amber-600 dark:text-amber-400 flex-shrink-0">${s.name}</span>`;
+                    content += `<span class="text-2xl md:text-3xl font-bold text-amber-600 dark:text-amber-400 flex-shrink-0">${s.name}</span>`;
                 }
                 sponsorsList.innerHTML = `<div class="flex flex-col items-center justify-center w-full h-full min-h-0">${content}</div>`;
                 applyTransition(sponsorsList, 'in');
@@ -1944,13 +2080,83 @@ function showFinalWinnersModal(isEndOfEvent: boolean = true) {
         const cycleTime = (appStore.state.appConfig.sponsorDisplaySeconds || 8) * 1000;
         finalSponsorsInterval = setInterval(cycleFinalSponsors, cycleTime);
     } else {
-        document.getElementById('final-sponsors-section')!.classList.add('hidden');
+        if (sponsorsSection) sponsorsSection.classList.add('hidden');
+        if (pixSection) pixSection.classList.add('md:col-span-2');
     }
 
+    // Populate Institution PIX QR Code & Details
+    const pixTitleEl = document.getElementById('final-pix-title');
+    const pixQrImgEl = document.getElementById('final-pix-qr-img') as HTMLImageElement;
+    const pixPlaceholderEl = document.getElementById('final-pix-qr-placeholder');
+    const pixKeyBoxEl = document.getElementById('final-pix-key-box');
+    const copyPixBtnEl = document.getElementById('final-copy-pix-btn');
 
+    const appConfig = appStore.state.appConfig;
+
+    if (pixTitleEl) {
+        pixTitleEl.textContent = appConfig.pixTitle || 'Apoie a Instituição via PIX';
+    }
+
+    const pixKey = appConfig.pixKey ? appConfig.pixKey.trim() : '';
+    const pixQrUrl = appConfig.pixQrCodeUrl;
+
+    if (pixQrUrl) {
+        if (pixQrImgEl) {
+            pixQrImgEl.src = pixQrUrl;
+            pixQrImgEl.classList.remove('hidden');
+        }
+        if (pixPlaceholderEl) pixPlaceholderEl.classList.add('hidden');
+    } else if (pixKey) {
+        try {
+            const generatedQr = await QRCode.toDataURL(pixKey, {
+                width: 250,
+                margin: 2,
+                color: { dark: '#059669', light: '#ffffff' }
+            });
+            if (pixQrImgEl) {
+                pixQrImgEl.src = generatedQr;
+                pixQrImgEl.classList.remove('hidden');
+            }
+            if (pixPlaceholderEl) pixPlaceholderEl.classList.add('hidden');
+        } catch (e) {
+            console.error("Erro ao gerar QR Code PIX:", e);
+            if (pixPlaceholderEl) {
+                pixPlaceholderEl.textContent = "Chave PIX configurada.";
+                pixPlaceholderEl.classList.remove('hidden');
+            }
+        }
+    } else {
+        if (pixPlaceholderEl) {
+            pixPlaceholderEl.textContent = "Cadastre a Chave PIX nas Configurações.";
+            pixPlaceholderEl.classList.remove('hidden');
+        }
+    }
+
+    if (pixKeyBoxEl) {
+        if (pixKey) {
+            pixKeyBoxEl.textContent = `Chave: ${pixKey}`;
+            pixKeyBoxEl.classList.remove('hidden');
+        } else {
+            pixKeyBoxEl.classList.add('hidden');
+        }
+    }
+
+    if (copyPixBtnEl) {
+        if (pixKey) {
+            copyPixBtnEl.classList.remove('hidden');
+            copyPixBtnEl.onclick = () => {
+                navigator.clipboard.writeText(pixKey);
+                copyPixBtnEl.textContent = '✓ Chave Copiada!';
+                setTimeout(() => copyPixBtnEl.textContent = '📋 Copiar Chave PIX', 2000);
+            };
+        } else {
+            copyPixBtnEl.classList.add('hidden');
+        }
+    }
 
     let winnerIndex = 0;
     const displayNextWinner = () => {
+        if (!winnerDisplay) return;
         if (allWinners.length === 0) {
             winnerDisplay.innerHTML = `<h3 class="text-3xl font-bold text-gray-900 dark:text-white">Nenhum vencedor registrado.</h3>`;
             winnerDisplay.classList.remove('scale-90', 'opacity-0');
@@ -1993,14 +2199,20 @@ function showFinalWinnersModal(isEndOfEvent: boolean = true) {
     };
     finalConfettiInterval = setInterval(startConfetti, 150);
 
-    document.getElementById('close-final-modal-btn')!.onclick = () => {
-        DOMElements.finalWinnersModal.classList.add('hidden');
-        if (winnerDisplayTimeout) clearInterval(winnerDisplayTimeout);
-        if (finalConfettiInterval) clearInterval(finalConfettiInterval);
-    };
+    const closeFinalBtn = document.getElementById('close-final-modal-btn');
+    if (closeFinalBtn) {
+        closeFinalBtn.onclick = () => {
+            if (DOMElements.finalWinnersModal) DOMElements.finalWinnersModal.classList.add('hidden');
+            if (winnerDisplayTimeout) clearInterval(winnerDisplayTimeout);
+            if (finalConfettiInterval) clearInterval(finalConfettiInterval);
+        };
+    }
 
-    document.getElementById('generate-proof-final-btn')!.onclick = () => showProofOptionsModal(true);
-    document.getElementById('donation-final-btn')!.onclick = () => (DOMElements.showDonationModalBtn as HTMLElement).click();
+    const proofFinalBtn = document.getElementById('generate-proof-final-btn');
+    if (proofFinalBtn) proofFinalBtn.onclick = () => showProofOptionsModal(true);
+
+    const donationFinalBtn = document.getElementById('donation-final-btn');
+    if (donationFinalBtn) donationFinalBtn.onclick = () => (DOMElements.showDonationModalBtn as HTMLElement)?.click();
 }
 
 function populateSettingsSponsorsTab() {
@@ -2526,6 +2738,53 @@ function showSettingsModal() {
     });
     strokeWidthSlider.addEventListener('change', () => appStore.debouncedSave());
 
+    // PIX Settings (Interval & Donations)
+    const pixTitleInput = document.getElementById('pix-title-input') as HTMLInputElement;
+    if (pixTitleInput) {
+        pixTitleInput.value = appConfig.pixTitle || 'Apoie nossa Instituição com PIX';
+        pixTitleInput.addEventListener('input', (e) => {
+            appStore.state.appConfig.pixTitle = (e.target as HTMLInputElement).value;
+            appStore.debouncedSave();
+        });
+    }
+
+    const pixKeyInput = document.getElementById('pix-key-input') as HTMLInputElement;
+    if (pixKeyInput) {
+        pixKeyInput.value = appConfig.pixKey || '';
+        pixKeyInput.addEventListener('input', (e) => {
+            appStore.state.appConfig.pixKey = (e.target as HTMLInputElement).value;
+            appStore.debouncedSave();
+        });
+    }
+
+    const pixQrPreview = document.getElementById('pix-qr-preview') as HTMLImageElement;
+    if (pixQrPreview && appConfig.pixQrCodeUrl) {
+        pixQrPreview.src = appConfig.pixQrCodeUrl;
+    }
+
+    const pixQrUpload = document.getElementById('pix-qr-upload') as HTMLInputElement;
+    if (pixQrUpload) {
+        pixQrUpload.addEventListener('change', async (e) => {
+            const file = (e.target as HTMLInputElement).files?.[0];
+            if (file) {
+                const base64 = await fileToBase64(file);
+                appStore.state.appConfig.pixQrCodeUrl = base64;
+                if (pixQrPreview) pixQrPreview.src = base64;
+                appStore.debouncedSave();
+            }
+        });
+    }
+
+    const removePixQrBtn = document.getElementById('remove-pix-qr-btn');
+    if (removePixQrBtn) {
+        removePixQrBtn.addEventListener('click', () => {
+            appStore.state.appConfig.pixQrCodeUrl = '';
+            if (pixQrPreview) pixQrPreview.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+            if (pixQrUpload) pixQrUpload.value = '';
+            appStore.debouncedSave();
+        });
+    }
+
     
     const sponsorDisplayTimer = document.getElementById('sponsor-display-timer') as HTMLInputElement;
     const sponsorDisplayValue = document.getElementById('sponsor-display-value') as HTMLElement;
@@ -2594,6 +2853,11 @@ function showSettingsModal() {
         appStore.debouncedSave();
         if (checked) {
             initFirebaseSync();
+        } else {
+            if ((window as any).masterBingoClaimsUnsub) {
+                (window as any).masterBingoClaimsUnsub();
+                (window as any).masterBingoClaimsUnsub = null;
+            }
         }
     });
 
@@ -3652,6 +3916,8 @@ Deseja MANTER o seu QR Code/Link atual para o público?
             DOMElements.sponsorDisplayModal.classList.remove('hidden');
 
             const cleanup = () => {
+                appStore.state.pendingNumber = null;
+                appStore.debouncedFirebaseSync(true);
                 document.removeEventListener('keydown', handleKeydown);
                 clearTimeout(floatingNumberTimeout as ReturnType<typeof setTimeout>);
                 if ((window as any).sponsorCountdownInterval) {
@@ -3906,7 +4172,7 @@ Deseja MANTER o seu QR Code/Link atual para o público?
             }
         }
 
-        function showBingoClaimNotification(series: number, uuid: string, gameNumber: string) {
+        function showBingoClaimNotification(series: number, uuid: string, gameNumber: string, docData?: any) {
             const audio = new Audio('/bingo-alert.mp3');
             audio.play().catch(e => console.log('Audio blocked', e));
 
@@ -3918,18 +4184,35 @@ Deseja MANTER o seu QR Code/Link atual para o público?
                 return c;
             })();
             
+            const isPublic = uuid && uuid.startsWith('public-');
             const cardStr = String(series).padStart(5, '0');
             const el = document.createElement('div');
             el.className = 'pointer-events-auto bg-green-500 text-white font-bold p-4 w-full rounded-xl shadow-2xl flex flex-col gap-2 animate-bounce-in border-4 border-white';
-            el.innerHTML = `
-                <div class="flex justify-between items-center w-full">
-                    <span class="text-[10px] uppercase bg-black/20 px-2 py-0.5 rounded tracking-widest">Alerta de Jogador Online</span>
-                    <button class="text-white hover:text-gray-200" onclick="this.parentElement.parentElement.remove()">✕</button>
-                </div>
-                <div class="text-3xl font-black uppercase text-center mt-1 drop-shadow-md">BINGO!</div>
-                <div class="text-lg text-center mx-1 mb-1 leading-tight">A cartela nº <span class="bg-yellow-400 text-black px-2 py-1 mx-1 rounded inline-block shadow-sm">${cardStr}</span> bateu lá do celular!</div>
-                <button class="bg-white text-green-700 hover:bg-gray-100 py-3 mt-1 w-full rounded-lg font-bold shadow uppercase transition-all active:scale-95" onclick="window.pauseDrawAndVerify('${uuid}', '${cardStr}'); this.parentElement.remove()">Fazer Checagem Oficial</button>
-            `;
+            
+            if (isPublic) {
+                const name = docData?.name || 'Público';
+                const cpf = docData?.cpf || '';
+                el.innerHTML = `
+                    <div class="flex justify-between items-center w-full">
+                        <span class="text-[10px] uppercase bg-black/20 px-2 py-0.5 rounded tracking-widest">Alerta de Jogador Online (Painel)</span>
+                        <button class="text-white hover:text-gray-200" onclick="this.parentElement.parentElement.remove()">✕</button>
+                    </div>
+                    <div class="text-3xl font-black uppercase text-center mt-1 drop-shadow-md">BINGO!</div>
+                    <div class="text-lg text-center mx-1 mb-1 leading-tight"><span class="bg-yellow-400 text-black px-2 py-1 mx-1 rounded inline-block shadow-sm">${name}</span> bateu pelo Painel Público!</div>
+                    <div class="text-xs text-center text-green-100 mb-2">CPF: ${cpf}</div>
+                    <button class="bg-white text-green-700 hover:bg-gray-100 py-3 mt-1 w-full rounded-lg font-bold shadow uppercase transition-all active:scale-95" onclick="this.parentElement.remove()">Verificar Física Manualmente</button>
+                `;
+            } else {
+                el.innerHTML = `
+                    <div class="flex justify-between items-center w-full">
+                        <span class="text-[10px] uppercase bg-black/20 px-2 py-0.5 rounded tracking-widest">Alerta de Jogador Online</span>
+                        <button class="text-white hover:text-gray-200" onclick="this.parentElement.parentElement.remove()">✕</button>
+                    </div>
+                    <div class="text-3xl font-black uppercase text-center mt-1 drop-shadow-md">BINGO!</div>
+                    <div class="text-lg text-center mx-1 mb-1 leading-tight">A cartela nº <span class="bg-yellow-400 text-black px-2 py-1 mx-1 rounded inline-block shadow-sm">${cardStr}</span> bateu lá do celular!</div>
+                    <button class="bg-white text-green-700 hover:bg-gray-100 py-3 mt-1 w-full rounded-lg font-bold shadow uppercase transition-all active:scale-95" onclick="window.pauseDrawAndVerify('${uuid}', '${cardStr}'); this.parentElement.remove()">Fazer Checagem Oficial</button>
+                `;
+            }
             
             container.appendChild(el);
         }
@@ -4047,7 +4330,7 @@ Deseja MANTER o seu QR Code/Link atual para o público?
                    snapshot.docChanges().forEach((change) => {
                        if (change.type === 'added') {
                            const docData = change.doc.data();
-                           showBingoClaimNotification(docData.series, docData.uuid, gameNumber);
+                           showBingoClaimNotification(docData.series, docData.uuid, gameNumber, docData);
                        }
                    });
                });
@@ -4834,9 +5117,19 @@ Deseja MANTER o seu QR Code/Link atual para o público?
 
         function showIntervalModal() {
             const { gamesData, appConfig, menuItems } = appStore.state;
-            DOMElements.eventBreakModal.innerHTML = getModalTemplates().eventBreak;
-            DOMElements.eventBreakModal.classList.remove('hidden');
-            DOMElements.confettiCanvas.style.zIndex = '51'; // Above modal content
+            let breakModal = DOMElements.eventBreakModal || document.getElementById('event-break-modal');
+            if (!breakModal) {
+                breakModal = document.createElement('div');
+                breakModal.id = 'event-break-modal';
+                breakModal.className = 'fixed inset-0 bg-gray-100 dark:bg-gray-900 bg-opacity-95 flex items-center justify-center p-4 z-[70] hidden';
+                document.body.appendChild(breakModal);
+            }
+            DOMElements.eventBreakModal = breakModal;
+            breakModal.innerHTML = getModalTemplates().eventBreak;
+            breakModal.classList.remove('hidden');
+            if (DOMElements.confettiCanvas) {
+                DOMElements.confettiCanvas.style.zIndex = '51'; // Above modal content
+            }
             
             const leftColumnEl = document.getElementById('break-left-column')!;
             const leftContentEl = document.getElementById('break-left-content')!;
@@ -4963,13 +5256,186 @@ Deseja MANTER o seu QR Code/Link atual para o público?
             intervalClockInterval = setInterval(updateClock, 1000);
             breakConfettiInterval = setInterval(triggerConfetti, 3500);
             
-            document.getElementById('close-break-modal-btn')!.onclick = () => {
-                DOMElements.eventBreakModal.classList.add('hidden');
-                clearInterval(intervalContentInterval);
-                clearInterval(intervalClockInterval);
-                clearInterval(breakConfettiInterval);
-                DOMElements.confettiCanvas.style.zIndex = '50';
+            const openIntervalQrBtn = document.getElementById('open-interval-qr-btn');
+            if (openIntervalQrBtn) {
+                openIntervalQrBtn.onclick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    showIntervalQrModal();
+                };
+            }
+
+            const closeBreakBtn = document.getElementById('close-break-modal-btn');
+            if (closeBreakBtn) {
+                closeBreakBtn.onclick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (DOMElements.eventBreakModal) DOMElements.eventBreakModal.classList.add('hidden');
+                    if (intervalContentInterval) clearInterval(intervalContentInterval);
+                    if (intervalClockInterval) clearInterval(intervalClockInterval);
+                    if (breakConfettiInterval) clearInterval(breakConfettiInterval);
+                    if (DOMElements.confettiCanvas) DOMElements.confettiCanvas.style.zIndex = '50';
+                };
+            }
+
+            if (DOMElements.eventBreakModal) {
+                DOMElements.eventBreakModal.onclick = (e: MouseEvent) => {
+                    const target = e.target as HTMLElement;
+                    if (target.closest('#open-interval-qr-btn')) {
+                        showIntervalQrModal();
+                    } else if (target.closest('#close-break-modal-btn')) {
+                        if (DOMElements.eventBreakModal) DOMElements.eventBreakModal.classList.add('hidden');
+                        if (intervalContentInterval) clearInterval(intervalContentInterval);
+                        if (intervalClockInterval) clearInterval(intervalClockInterval);
+                        if (breakConfettiInterval) clearInterval(breakConfettiInterval);
+                        if (DOMElements.confettiCanvas) DOMElements.confettiCanvas.style.zIndex = '50';
+                    }
+                };
+            }
+        }
+
+        async function showIntervalQrModal() {
+            let modalEl = document.getElementById('interval-qr-modal');
+            if (!modalEl) {
+                modalEl = document.createElement('div');
+                modalEl.id = 'interval-qr-modal';
+                modalEl.className = 'fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-[120] hidden';
+            }
+            
+            const targetContainer = document.fullscreenElement || document.body;
+            if (modalEl.parentElement !== targetContainer) {
+                targetContainer.appendChild(modalEl);
+            }
+            DOMElements.intervalQrModal = modalEl;
+            modalEl.innerHTML = getModalTemplates().intervalQr;
+            modalEl.classList.remove('hidden');
+
+            const appConfig = appStore.state.appConfig;
+
+            // Close handlers
+            const closeModal = () => {
+                if (modalEl) {
+                    modalEl.classList.add('hidden');
+                }
             };
+            document.getElementById('close-interval-qr-x-btn')?.addEventListener('click', closeModal);
+            document.getElementById('close-interval-qr-footer-btn')?.addEventListener('click', closeModal);
+
+            // 1. Live Tracking QR Code
+            const liveQrImg = document.getElementById('interval-live-qr-img') as HTMLImageElement;
+            const liveQrLoading = document.getElementById('interval-live-qr-loading');
+            const liveUrlText = document.getElementById('interval-live-url-text');
+            const copyLiveBtn = document.getElementById('interval-copy-live-url-btn');
+
+            if (!appConfig.onlineSyncEnabled) {
+                appConfig.onlineSyncEnabled = true;
+                appStore.debouncedSave();
+                if (typeof initFirebaseSync === 'function') {
+                    initFirebaseSync();
+                }
+            }
+
+            const origin = window.location.origin;
+            let basePath = window.location.pathname;
+            if (basePath.endsWith('index.html')) basePath = basePath.replace('index.html', '');
+            if (!basePath.endsWith('/')) basePath += '/';
+
+            const currentEventId = appConfig.eventId || (window as any).eventId || '';
+            const liveUrl = `${origin}${basePath}attendee.html?event=${encodeURIComponent(currentEventId)}`;
+
+            if (liveUrlText) liveUrlText.textContent = liveUrl;
+
+            if (copyLiveBtn) {
+                copyLiveBtn.onclick = () => {
+                    navigator.clipboard.writeText(liveUrl);
+                    copyLiveBtn.textContent = '✓ Link Copiado!';
+                    setTimeout(() => copyLiveBtn.textContent = '📋 Copiar Link Ao Vivo', 2000);
+                };
+            }
+
+            try {
+                const qrDataUrl = await QRCode.toDataURL(liveUrl, {
+                    width: 300,
+                    margin: 2,
+                    color: { dark: '#4f46e5', light: '#ffffff' }
+                });
+                if (liveQrImg && liveQrLoading) {
+                    liveQrImg.src = qrDataUrl;
+                    liveQrImg.classList.remove('hidden');
+                    liveQrLoading.classList.add('hidden');
+                }
+            } catch (e) {
+                console.error("Erro ao gerar QR Code Ao Vivo:", e);
+                if (liveQrLoading) liveQrLoading.textContent = "Erro ao gerar QR Code.";
+            }
+
+            // 2. PIX QR Code & Key
+            const pixTitleDisplay = document.getElementById('interval-pix-title-display');
+            const pixQrImg = document.getElementById('interval-pix-qr-img') as HTMLImageElement;
+            const pixQrPlaceholder = document.getElementById('interval-pix-qr-placeholder');
+            const pixKeyBox = document.getElementById('interval-pix-key-box');
+            const copyPixBtn = document.getElementById('interval-copy-pix-key-btn');
+
+            if (pixTitleDisplay) {
+                pixTitleDisplay.textContent = appConfig.pixTitle || 'Doação via PIX';
+            }
+
+            const hasPixImage = Boolean(appConfig.pixQrCodeUrl);
+            const hasPixKey = Boolean(appConfig.pixKey && appConfig.pixKey.trim().length > 0);
+
+            if (hasPixImage) {
+                if (pixQrImg) {
+                    pixQrImg.src = appConfig.pixQrCodeUrl;
+                    pixQrImg.classList.remove('hidden');
+                }
+                if (pixQrPlaceholder) pixQrPlaceholder.classList.add('hidden');
+            } else if (hasPixKey) {
+                try {
+                    const pixQrDataUrl = await QRCode.toDataURL(appConfig.pixKey.trim(), {
+                        width: 300,
+                        margin: 2,
+                        color: { dark: '#059669', light: '#ffffff' }
+                    });
+                    if (pixQrImg) {
+                        pixQrImg.src = pixQrDataUrl;
+                        pixQrImg.classList.remove('hidden');
+                    }
+                    if (pixQrPlaceholder) pixQrPlaceholder.classList.add('hidden');
+                } catch (e) {
+                    console.error("Erro ao gerar QR Code do PIX:", e);
+                    if (pixQrPlaceholder) {
+                        pixQrPlaceholder.textContent = "Chave PIX configurada.";
+                        pixQrPlaceholder.classList.remove('hidden');
+                    }
+                }
+            } else {
+                if (pixQrPlaceholder) {
+                    pixQrPlaceholder.textContent = "Nenhum QR Code ou Chave PIX cadastrada nas Configurações.";
+                    pixQrPlaceholder.classList.remove('hidden');
+                }
+            }
+
+            if (pixKeyBox) {
+                if (hasPixKey) {
+                    pixKeyBox.textContent = `Chave: ${appConfig.pixKey}`;
+                    pixKeyBox.classList.remove('hidden');
+                } else {
+                    pixKeyBox.classList.add('hidden');
+                }
+            }
+
+            if (copyPixBtn) {
+                if (hasPixKey) {
+                    copyPixBtn.classList.remove('hidden');
+                    copyPixBtn.onclick = () => {
+                        navigator.clipboard.writeText(appConfig.pixKey);
+                        copyPixBtn.textContent = '✓ Chave Copiada!';
+                        setTimeout(() => copyPixBtn.textContent = '📋 Copiar Chave PIX', 2000);
+                    };
+                } else {
+                    copyPixBtn.classList.add('hidden');
+                }
+            }
         }
         
         function updateGameItemUI(gameItem: Element, isComplete: boolean) {
@@ -5747,6 +6213,20 @@ function showRoundEditModal(gameNumber: string) {
             </div>`;
             
             DOMElements.customAlertModal.classList.remove('hidden');
+
+            if (isWinner) {
+                // Broadcast verified winning card to attendee view
+                if (!activeGame.verifiedWinningCards) {
+                    activeGame.verifiedWinningCards = [];
+                }
+                activeGame.verifiedWinningCards.push({
+                    series: cardData.series,
+                    uuid: uuid,
+                    numbers: cardData.numbers,
+                    drawnCount: calledNumbers.length
+                });
+                appStore.debouncedSave(true);
+            }
             document.getElementById('close-card-result-btn')!.onclick = () => {
                 DOMElements.customAlertModal.classList.add('hidden');
             };
@@ -6908,6 +7388,10 @@ function showRoundEditModal(gameNumber: string) {
                     // Trigger a sync
                     if (typeof (appStore as any).debouncedFirebaseSync === 'function') {
                         (appStore as any).debouncedFirebaseSync();
+                    }
+
+                    if (appStore.state.activeGameNumber) {
+                        loadRoundState(appStore.state.activeGameNumber);
                     }
                 } else {
                     try {

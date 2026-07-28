@@ -22,6 +22,12 @@ service cloud.firestore {
         allow get, list: if true;
         allow create, update, delete: if isSignedIn()
           && get(/databases/$(database)/documents/events/$(eventId)).data.hostId == request.auth.uid;
+          
+        match /bingoClaims/{claimId} {
+          allow create: if isSignedIn();
+          allow read, update, delete: if isSignedIn()
+            && get(/databases/$(database)/documents/events/$(eventId)).data.hostId == request.auth.uid;
+        }
       }
 
       match /images/{imageId} {

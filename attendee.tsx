@@ -8,8 +8,9 @@ function getLetterForNumber(number: number): string {
 }
 
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously } from 'firebase/auth';
-import { getFirestore, doc, onSnapshot, clearIndexedDbPersistence } from 'firebase/firestore';
+import { getAuth, signInAnonymously, GoogleAuthProvider, FacebookAuthProvider, signInWithPopup } from 'firebase/auth';
+import { getFirestore, doc, onSnapshot, clearIndexedDbPersistence, collection, addDoc } from 'firebase/firestore';
+import QRCode from 'qrcode';
 import firebaseConfig from './firebase-applet-config.json';
 import './index.css';
 
@@ -162,6 +163,63 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const state = JSON.parse(eventData.fullStateJSON);
                     const game = state.gamesData[eventData.activeGameNumber];
                     const config = state.appConfig;
+                    
+                    (window as any).currentActiveGame = eventData.activeGameNumber;
+                    (window as any).currentBingoTitle = config.bingoTitle;
+
+                    const pixConfigStr = JSON.stringify({ key: config.pixKey || '', qrUrl: config.pixQrCodeUrl || '', title: config.pixTitle || '' });
+                    if ((window as any).lastPixConfigStr !== pixConfigStr) {
+                        (window as any).lastPixConfigStr = pixConfigStr;
+                        const pixKey = config.pixKey ? config.pixKey.trim() : '';
+                        const pixQrImg = document.getElementById('pix-qr-img-attendee') as HTMLImageElement;
+                        const pixQrPlaceholder = document.getElementById('pix-qr-placeholder-attendee');
+                        const pixDisplay = document.getElementById('pix-key-display-attendee');
+
+                        if (pixDisplay) {
+                            pixDisplay.textContent = pixKey ? `Chave: ${pixKey}` : 'Sem chave PIX cadastrada';
+                        }
+
+                        if (config.pixQrCodeUrl) {
+                            if (pixQrImg) {
+                                pixQrImg.src = config.pixQrCodeUrl;
+                                pixQrImg.classList.remove('hidden');
+                            }
+                            if (pixQrPlaceholder) pixQrPlaceholder.classList.add('hidden');
+                        } else if (pixKey) {
+                            QRCode.toDataURL(pixKey, {
+                                width: 250,
+                                margin: 2,
+                                color: { dark: '#059669', light: '#ffffff' }
+                            }).then(url => {
+                                if (pixQrImg) {
+                                    pixQrImg.src = url;
+                                    pixQrImg.classList.remove('hidden');
+                                }
+                                if (pixQrPlaceholder) pixQrPlaceholder.classList.add('hidden');
+                            }).catch(err => {
+                                console.error("Erro ao gerar QR Code PIX no painel público:", err);
+                                if (pixQrPlaceholder) {
+                                    pixQrPlaceholder.textContent = "Chave PIX configurada.";
+                                    pixQrPlaceholder.classList.remove('hidden');
+                                }
+                            });
+                        } else {
+                            if (pixQrImg) pixQrImg.classList.add('hidden');
+                            if (pixQrPlaceholder) {
+                                pixQrPlaceholder.textContent = "Chave PIX não cadastrada.";
+                                pixQrPlaceholder.classList.remove('hidden');
+                            }
+                        }
+                    }
+
+                    const shoutBingoBtn = document.getElementById('attendee-shout-bingo-btn') as HTMLButtonElement;
+                    if (shoutBingoBtn) {
+                        const titleText = config.bingoTitle === 'AJUDE' ? '🚨 AJUDE!' : '🚨 BINGO!';
+                        const currentText = shoutBingoBtn.textContent?.trim() || '';
+                        if (currentText !== titleText && !currentText.includes('BATI') && !currentText.includes('ENVIAD')) {
+                            shoutBingoBtn.innerHTML = titleText;
+                        }
+                    }
 
                     const labelsStr = JSON.stringify(state.appLabels || {});
                     if (lastLabelsStr !== labelsStr) {
@@ -186,10 +244,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         if (labels.donationModalPixLabel) {
                             const pixLabel = document.getElementById('donation-modal-pix-label');
                             if (pixLabel) pixLabel.textContent = labels.donationModalPixLabel;
-                        }
-                        const pixDisplay = document.getElementById('pix-key-display-attendee');
-                        if (pixDisplay && config.pixKey) {
-                            pixDisplay.textContent = config.pixKey;
                         }
                         if (labels.donationModalCopyButton) {
                             const copyBtn = document.getElementById('copy-pix-btn-attendee');
@@ -229,6 +283,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 }
                                 overlayTitleEl.textContent = "Nova Rodada";
                                 overlayMsgEl.textContent = game ? (game.name || `Rodada ${eventData.activeGameNumber}`) : `Rodada ${eventData.activeGameNumber}`;
+                                overlayMsgEl.style.fontSize = ""; // reset
+                                overlayMsgEl.style.color = ""; // reset
                                 overlayEl.classList.remove("hidden");
                                 overlayEl.classList.add("flex");
                                 setTimeout(() => {
@@ -307,6 +363,38 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const drawnPrizes = state.drawnPrizeNumbers || [];
                     if (drawnPrizes.length > ((window as any).lastDrawnPrizeCount || 0)) {
                         (window as any).lastDrawnPrizeCount = drawnPrizes.length;
+                        
+                        const newlyDrawn = drawnPrizes[drawnPrizes.length - 1];
+                        
+                        const overlayIconEl = document.getElementById('overlay-icon')!;
+                        const overlayTitleEl = document.getElementById('overlay-title')!;
+                        const overlayMsgEl = document.getElementById('overlay-msg')!;
+                        const overlayEl = document.getElementById('attendee-overlay')!;
+                        
+                        if ((window as any)._raffleDelayTimeout) clearTimeout((window as any)._raffleDelayTimeout);
+                        
+                        (window as any)._raffleDelayTimeout = setTimeout(() => {
+                            overlayIconEl.textContent = "🎁";
+                            overlayTitleEl.textContent = "Cartela Sorteada!";
+                            overlayMsgEl.textContent = "Nº " + newlyDrawn;
+                            
+                            // Increase font size for emphasis
+                            overlayMsgEl.style.fontSize = "4rem";
+                            overlayMsgEl.style.color = "#f59e0b"; // amber-500
+                            
+                            overlayEl.classList.remove("hidden");
+                            overlayEl.classList.add("flex");
+                            
+                            if ((window as any)._raffleTimeout) clearTimeout((window as any)._raffleTimeout);
+                            (window as any)._raffleTimeout = setTimeout(() => {
+                                if (overlayIconEl.textContent === "🎁") {
+                                    overlayEl.classList.add("hidden");
+                                    overlayEl.classList.remove("flex");
+                                    overlayMsgEl.style.fontSize = ""; // reset
+                                    overlayMsgEl.style.color = ""; // reset
+                                }
+                            }, 8000); // Show for 8 seconds
+                        }, 4000); // Delay 4 seconds
                     }
 
                     let verifyStr = JSON.stringify(state.isVerifying || false);
@@ -317,6 +405,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                             overlayIconEl.textContent = "🔍";
                             overlayTitleEl.textContent = "Aguardando conferência...";
                             overlayMsgEl.textContent = "Verificando as cartelas chamadas";
+                            overlayMsgEl.style.fontSize = ""; // reset
+                            overlayMsgEl.style.color = ""; // reset
                             overlayEl.classList.remove("hidden");
                             overlayEl.classList.add("flex");
                         } else if (!isVerifyingState && overlayIconEl.textContent === "🔍") {
@@ -399,7 +489,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     // Called Numbers and Grid logic
                     const calledNumbers: number[] = game ? (game.calledNumbers || []) : [];
-                    const numbersStr = JSON.stringify({ called: calledNumbers, letters: config.bingoTitle, color: game ? game.color : '#38bdf8' });
+                    const numbersStr = JSON.stringify({ called: calledNumbers, letters: config.bingoTitle, color: game ? game.color : '#38bdf8', verified: game ? game.verifiedWinningCards : [] });
                     if (lastNumbersStr !== numbersStr) {
                         lastNumbersStr = numbersStr;
 
@@ -426,11 +516,29 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const isNewNumber = calledNumbers.length > previousDrawnCount;
                         previousDrawnCount = calledNumbers.length;
                            
-                        // Atualizar Último Sorteado
-                        if (calledNumbers.length > 0) {
+                                                // Atualizar Último Sorteado
+                        const hasWinners = game && game.winners && game.winners.length > 0;
+                        const lastWinner = hasWinners ? game.winners[game.winners.length - 1] : null;
+                        const hasVerifiedCards = game && game.verifiedWinningCards && game.verifiedWinningCards.length > 0;
+                        const lastVerifiedCard = hasVerifiedCards ? game.verifiedWinningCards[game.verifiedWinningCards.length - 1] : null;
+
+                        if (lastVerifiedCard && (lastVerifiedCard.drawnCount || calledNumbers.length) >= calledNumbers.length) {
+                            lastNumberEl.textContent = lastVerifiedCard.series.toString();
+                            lastNumberEl.style.color = activeColor;
+                            if (lastTitleEl) lastTitleEl.textContent = "Cartela Bateu!";
+                            lastNumberBallEl.style.boxShadow = `0 0 30px ${activeColor}80`;
+                            
+                            if (isNewNumber || (window as any)._lastVerifiedSeries !== lastVerifiedCard.series) {
+                                (window as any)._lastVerifiedSeries = lastVerifiedCard.series;
+                                lastNumberBallEl.classList.remove('animate-bounce-in');
+                                void lastNumberBallEl.offsetWidth; // trigger reflow
+                                lastNumberBallEl.classList.add('animate-bounce-in');
+                            }
+                        } else if (calledNumbers.length > 0) {
                             const last = calledNumbers[calledNumbers.length - 1];
                             lastNumberEl.textContent = last.toString();
                             lastNumberEl.style.color = activeColor;
+                            if (lastTitleEl) lastTitleEl.textContent = "Último Sorteado";
                                
                             // Fazer o bola acender
                             lastNumberBallEl.style.boxShadow = `0 0 30px ${activeColor}80`;
@@ -440,9 +548,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 void lastNumberBallEl.offsetWidth; // trigger reflow
                                 lastNumberBallEl.classList.add('animate-bounce-in');
                             }
+                        } else if (lastWinner && lastWinner.cartela) {
+                            lastNumberEl.textContent = lastWinner.cartela.toString();
+                            lastNumberEl.style.color = activeColor;
+                            if (lastTitleEl) lastTitleEl.textContent = "Cartela Sorteada";
+                            lastNumberBallEl.style.boxShadow = `0 0 30px ${activeColor}80`;
                         } else {
                             lastNumberEl.textContent = '- -';
                             lastNumberEl.style.color = 'white';
+                            if (lastTitleEl) lastTitleEl.textContent = "Último Sorteado";
                             lastNumberBallEl.style.boxShadow = 'none';
                         }
                            
@@ -693,19 +807,185 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const donateBtn = document.getElementById('donate-btn-attendee');
+    const topDonateBtn = document.getElementById('top-donate-btn-attendee');
+    const contentDonateBtn = document.getElementById('content-donate-btn-attendee');
+    const footerDonateBtn = document.getElementById('donate-btn-attendee');
     const pixModal = document.getElementById('pix-donation-modal-attendee');
     const closeBtn = document.getElementById('close-donation-btn-attendee');
+    const copyPixBtn = document.getElementById('copy-pix-btn-attendee');
 
-    if (donateBtn && pixModal && closeBtn) {
-        donateBtn.addEventListener('click', () => {
+    const openPixModal = () => {
+        if (pixModal) {
             pixModal.classList.remove('hidden');
             pixModal.classList.add('flex');
-        });
+        }
+    };
 
-        closeBtn.addEventListener('click', () => {
+    const closePixModal = () => {
+        if (pixModal) {
             pixModal.classList.add('hidden');
             pixModal.classList.remove('flex');
+        }
+    };
+
+    if (topDonateBtn) topDonateBtn.addEventListener('click', openPixModal);
+    if (contentDonateBtn) contentDonateBtn.addEventListener('click', openPixModal);
+    if (footerDonateBtn) footerDonateBtn.addEventListener('click', openPixModal);
+    if (closeBtn) closeBtn.addEventListener('click', closePixModal);
+
+    if (pixModal) {
+        pixModal.addEventListener('click', (e) => {
+            if (e.target === pixModal) {
+                closePixModal();
+            }
         });
     }
+
+    if (copyPixBtn) {
+        copyPixBtn.addEventListener('click', () => {
+            const pixDisplay = document.getElementById('pix-key-display-attendee');
+            let textToCopy = pixDisplay?.textContent?.replace(/^Chave:\s*/, '') || '';
+            if (textToCopy && textToCopy !== 'Sem chave PIX cadastrada') {
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    const originalText = copyPixBtn.textContent;
+                    copyPixBtn.textContent = '✓ Chave PIX Copiada!';
+                    copyPixBtn.classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
+                    copyPixBtn.classList.add('bg-blue-600');
+                    setTimeout(() => {
+                        copyPixBtn.textContent = originalText || '📋 Copiar Chave PIX';
+                        copyPixBtn.classList.remove('bg-blue-600');
+                        copyPixBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
+                    }, 2500);
+                }).catch(err => {
+                    console.error('Erro ao copiar chave PIX:', err);
+                });
+            }
+        });
+    }
+
+    const shoutBingoBtn = document.getElementById('attendee-shout-bingo-btn') as HTMLButtonElement;
+    const authModal = document.getElementById('attendee-auth-modal');
+    const closeAuthBtn = document.getElementById('close-auth-btn');
+    const loginGoogleBtn = document.getElementById('login-google-btn');
+    const loginFacebookBtn = document.getElementById('login-facebook-btn');
+    const authProvidersSection = document.getElementById('auth-providers-section');
+    const cpfSection = document.getElementById('cpf-section');
+    const cpfInput = document.getElementById('auth-cpf-input') as HTMLInputElement;
+    const lgpdCheckbox = document.getElementById('lgpd-consent-checkbox') as HTMLInputElement;
+    const confirmAuthBtn = document.getElementById('confirm-auth-btn') as HTMLButtonElement;
+
+    let attendeeAuthenticated = false;
+    let attendeeUserData: any = null;
+
+    if (shoutBingoBtn) {
+        shoutBingoBtn.addEventListener('click', () => {
+            if (!attendeeAuthenticated) {
+                authModal?.classList.remove('hidden');
+                authModal?.classList.add('flex');
+            } else {
+                sendBingoClaim();
+            }
+        });
+    }
+
+    if (closeAuthBtn) {
+        closeAuthBtn.addEventListener('click', () => {
+            authModal?.classList.add('hidden');
+            authModal?.classList.remove('flex');
+        });
+    }
+
+    const handleLogin = async (provider: any) => {
+        try {
+            const result = await signInWithPopup(auth, provider);
+            attendeeUserData = result.user;
+            
+            attendeeAuthenticated = true;
+            authModal?.classList.add('hidden');
+            authModal?.classList.remove('flex');
+            alert("Botão habilitado com sucesso!");
+            
+            const currentTitle = (window as any).currentBingoTitle === 'AJUDE' ? '🔔 BATI AJUDE!' : '🔔 BATI BINGO!';
+            shoutBingoBtn.innerHTML = currentTitle;
+        } catch (e: any) {
+            console.error(e);
+            let errorMsg = "Tente novamente.";
+            if (e.code === 'auth/operation-not-allowed') {
+                errorMsg = "Este método de login não está ativado. O administrador precisa ativar o Google/Facebook no Firebase Console.";
+            } else if (e.message) {
+                errorMsg = e.message;
+            }
+            alert("Erro ao fazer login: " + errorMsg);
+        }
+    };
+
+    loginGoogleBtn?.addEventListener('click', () => handleLogin(new GoogleAuthProvider()));
+    loginFacebookBtn?.addEventListener('click', () => handleLogin(new FacebookAuthProvider()));
+
+    const checkFormValidity = () => {
+        if (cpfInput.value.length === 14 && lgpdCheckbox.checked) {
+            authProvidersSection?.classList.remove('opacity-50', 'pointer-events-none');
+        } else {
+            authProvidersSection?.classList.add('opacity-50', 'pointer-events-none');
+        }
+    };
+
+    cpfInput?.addEventListener('input', () => {
+        let val = cpfInput.value.replace(/\D/g, '');
+        if (val.length > 11) val = val.slice(0, 11);
+        if (val.length > 9) val = val.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+        else if (val.length > 6) val = val.replace(/(\d{3})(\d{3})(\d{1,3})/, "$1.$2.$3");
+        else if (val.length > 3) val = val.replace(/(\d{3})(\d{1,3})/, "$1.$2");
+        cpfInput.value = val;
+        
+        checkFormValidity();
+    });
+
+    lgpdCheckbox?.addEventListener('change', checkFormValidity);
+
+    const sendBingoClaim = async () => {
+        if (!attendeeUserData) return;
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const targetEventId = urlParams.get('event');
+            if (!targetEventId) {
+                alert("ID do evento não encontrado.");
+                return;
+            }
+            const activeGame = (window as any).currentActiveGame || 'default';
+            const claimsRef = collection(db, `events/${targetEventId}/games/${activeGame}/bingoClaims`);
+            
+            shoutBingoBtn.innerHTML = "⏳ ENVIANDO...";
+            shoutBingoBtn.disabled = true;
+
+            await addDoc(claimsRef, {
+                uuid: 'public-' + attendeeUserData.uid,
+                series: 0,
+                name: attendeeUserData.displayName || 'Público',
+                cpf: cpfInput?.value || '',
+                timestamp: Date.now()
+            });
+
+            shoutBingoBtn.innerHTML = "✅ ENVIADO!";
+            shoutBingoBtn.classList.remove('from-red-600', 'to-rose-600');
+            shoutBingoBtn.classList.add('from-emerald-600', 'to-green-600');
+            alert("BINGO enviado para a banca! Aguarde conferência oficial.");
+
+            setTimeout(() => {
+                const currentTitle = (window as any).currentBingoTitle === 'AJUDE' ? '🔔 BATI AJUDE!' : '🔔 BATI BINGO!';
+                shoutBingoBtn.innerHTML = currentTitle;
+                shoutBingoBtn.classList.add('from-red-600', 'to-rose-600');
+                shoutBingoBtn.classList.remove('from-emerald-600', 'to-green-600');
+                shoutBingoBtn.disabled = false;
+            }, 10000);
+
+        } catch (e: any) {
+            console.error(e);
+            const errMsg = e.message || "Tente novamente.";
+            alert("Erro ao enviar BINGO: " + errMsg);
+            const currentTitle = (window as any).currentBingoTitle === 'AJUDE' ? '🚨 AJUDE!' : '🚨 BINGO!';
+            shoutBingoBtn.innerHTML = currentTitle;
+            shoutBingoBtn.disabled = false;
+        }
+    };
 });
